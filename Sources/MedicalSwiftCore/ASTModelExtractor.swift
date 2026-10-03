@@ -12,11 +12,11 @@ public struct ASTModelExtractor{
     guard let id=b.pattern.as(IdentifierPatternSyntax.self) else{continue};let name=id.identifier.text
     if isState{
      guard let e=b.initializer?.value else{throw RuntimeDiagnostic("@State requires initializer.")}
-     if let n=e.as(IntegerLiteralExprSyntax.self),let x=Int(n.literal.text){m.state[name]=.int(x)}
-     else if let q=e.as(BooleanLiteralExprSyntax.self){m.state[name]=.bool(q.literal.text=="true")}
-     else if let s=e.as(StringLiteralExprSyntax.self),s.segments.count==1,let x=s.segments.first?.as(StringSegmentSyntax.self){m.state[name]=.string(x.content.text)}
+     if let n=e.as(IntegerLiteralExprSyntax.self),let x=Int(n.literal.text) { m.state[name ] = .int(x)}
+     else if let q=e.as(BooleanLiteralExprSyntax.self) { m.state[name ] = .bool(q.literal.text=="true")}
+     else if let s=e.as(StringLiteralExprSyntax.self),s.segments.count==1,let x=s.segments.first?.as(StringSegmentSyntax.self) { m.state[name ] = .string(x.content.text)}
      else{throw RuntimeDiagnostic("Unsupported @State initializer.")}
-    } else if name != "body",let a=b.accessorBlock,case .getter(let items)=a.accessors,items.count==1,let e=items.first?.item.as(ExprSyntax.self),let x=try? lower(e){m.computed.append(.init(name:name,expression:x))}
+    } else if name != "body",let a=b.accessorBlock,case .getter(let items)=a.accessors,items.count==1,let e=items.first?.item.as(ExprSyntax.self),let x=try? lower(e) { m.computed.append(.init(name:name,expression:x))}
    }
   };return m
  }

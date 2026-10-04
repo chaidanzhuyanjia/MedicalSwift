@@ -31,11 +31,19 @@ struct ContentView: View {
     @State private var errorMessage: String?
     @State private var showingImporter = false
     @State private var loadedFilename: String?
+    @State private var uiTestFixtureReady = false
 
     var body: some View {
         NavigationStack {
-            TextEditor(text: $source)
-                .accessibilityIdentifier("sourceEditor")
+            VStack(spacing: 0) {
+                if ProcessInfo.processInfo.environment["MEDICALSWIFT_UI_TEST_SEED"] == "1" {
+                    Text(uiTestFixtureReady ? "UITest fixture ready" : "UITest fixture pending")
+                        .accessibilityIdentifier("uiTestFixtureStatus")
+                        .font(.caption)
+                }
+                TextEditor(text: $source)
+                    .accessibilityIdentifier("sourceEditor")
+            }
                 .font(.system(.body, design: .monospaced))
                 .padding()
                 .navigationTitle(loadedFilename ?? "MedicalSwift")

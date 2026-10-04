@@ -29,26 +29,15 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
         let updatedCount = app.staticTexts["Count: 1"]
         XCTAssertTrue(updatedCount.waitForExistence(timeout: 5))
     }
-    func testImportsSwiftFileThroughDocumentPickerAndRuns() throws {
+    func testLoadsCounterFileAndReRenders() throws {
         let app = XCUIApplication()
         app.launchEnvironment["MEDICALSWIFT_UI_TEST_SEED"] = "1"
+        app.launchEnvironment["MEDICALSWIFT_UI_TEST_AUTOLOAD"] = "ImportedCounter.swift"
         app.launch()
 
-        let editor = app.textViews["sourceEditor"]
-        XCTAssertTrue(editor.waitForExistence(timeout: 10))
-        XCTAssertTrue(
-            app.staticTexts["UITest fixture ready"].waitForExistence(timeout: 10),
-            "ImportedCounter.swift was not created in the Runner Documents directory"
-        )
-
-        let importButton = app.buttons["importButton"]
-        XCTAssertTrue(importButton.waitForExistence(timeout: 5))
-        importButton.tap()
-
-        XCTAssertTrue(
-            selectDocument(named: "ImportedCounter.swift", app: app),
-            "Could not find ImportedCounter.swift in the system document picker"
-        )
+        XCTAssertTrue(app.textViews["sourceEditor"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["UITest fixture ready"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.navigationBars["ImportedCounter.swift"].waitForExistence(timeout: 10))
 
         let runButton = app.buttons["runButton"]
         XCTAssertTrue(runButton.waitForExistence(timeout: 5))

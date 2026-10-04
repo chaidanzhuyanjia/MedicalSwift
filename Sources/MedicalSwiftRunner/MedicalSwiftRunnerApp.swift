@@ -117,8 +117,16 @@ struct ContentView: View {
             try FileManager.default.createDirectory(at: documents, withIntermediateDirectories: true)
 
             let fixtureURL = documents.appendingPathComponent("ImportedCounter.swift")
+            let controlURL = documents.appendingPathComponent("MedicalSwiftControl.txt")
             try fixture.write(to: fixtureURL, atomically: true, encoding: .utf8)
-            uiTestFixtureReady = FileManager.default.fileExists(atPath: fixtureURL.path)
+            try "MedicalSwift file-provider control".write(
+                to: controlURL,
+                atomically: true,
+                encoding: .utf8
+            )
+            uiTestFixtureReady =
+                FileManager.default.fileExists(atPath: fixtureURL.path)
+                && FileManager.default.fileExists(atPath: controlURL.path)
         } catch {
             errorMessage = error.localizedDescription
         }

@@ -55,7 +55,23 @@ public struct NativeRenderer: View {
                 ForEach(start..<max(start, end), id: \.self) { value in
                     render(
                         template.map {
-                            $0.substituting(variable: variable, with: value)
+                            $0.substituting(
+                                variable: variable,
+                                with: .int(value)
+                            )
+                        }
+                    )
+                }
+            }
+        case .forEachCollection(let collection, let variable, let template):
+            if case .array(let values) = runtime.evaluate(collection) {
+                ForEach(Array(values.enumerated()), id: \.offset) { _, value in
+                    render(
+                        template.map {
+                            $0.substituting(
+                                variable: variable,
+                                with: value
+                            )
                         }
                     )
                 }
@@ -105,7 +121,7 @@ private struct ModifiedRenderer: View {
 }
 
 private extension ViewNode {
-    func substituting(variable: String, with value: Int) -> ViewNode {
+    func substituting(variable: String, with value: RuntimeValue) -> ViewNode {
         switch self {
         case .text(let expression):
             return .text(expression.substituting(variable: variable, with: value))
@@ -167,6 +183,14 @@ private extension ViewNode {
                     $0.substituting(variable: variable, with: value)
                 }
             )
+        case .forEachCollection(let collection, let innerVariable, let template):
+            return .forEachCollection(
+                collection: collection.substituting(variable: variable, with: value),
+                variable: innerVariable,
+                template: template.map {
+                    $0.substituting(variable: variable, with: value)
+                }
+            )
         case .modified(let base, let modifiers):
             return .modified(
                 base.substituting(variable: variable, with: value),
@@ -177,10 +201,15 @@ private extension ViewNode {
 }
 
 private extension Expression {
-    func substituting(variable: String, with value: Int) -> Expression {
+    func substituting(variable: String, with value: RuntimeValue) -> Expression {
         switch self {
         case .variable(let name) where name == variable:
-            return .int(value)
+            switch value {
+            case .int(let number): return .int(number)
+            case .bool(let boolean): return .bool(boolean)
+            case .string(let string): return .string(string)
+            case .array: return self
+            }
         case .add(let left, let right):
             return .add(
                 left.substituting(variable: variable, with: value),
@@ -209,7 +238,7 @@ private extension Expression {
 }
 
 private extension InterpolationPart {
-    func substituting(variable: String, with value: Int) -> InterpolationPart {
+    func substituting(variable: String, with value: RuntimeValue) -> InterpolationPart {
         switch self {
         case .literal:
             return self
@@ -222,7 +251,7 @@ private extension InterpolationPart {
 }
 
 private extension Condition {
-    func substituting(variable: String, with value: Int) -> Condition {
+    func substituting(variable: String, with value: RuntimeValue) -> Condition {
         switch self {
         case .compare(let left, let op, let right):
             return .compare(
@@ -235,7 +264,7 @@ private extension Condition {
 }
 
 private extension Statement {
-    func substituting(variable: String, with value: Int) -> Statement {
+    func substituting(variable: String, with value: RuntimeValue) -> Statement {
         switch self {
         case .increment:
             return self

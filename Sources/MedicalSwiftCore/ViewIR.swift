@@ -15,6 +15,7 @@ public indirect enum ViewNode: Equatable, Sendable {
     case conditional(condition: Condition, then: [ViewNode], otherwise: [ViewNode])
     case spacer
     case forEachRange(start: Int, end: Expression, variable: String, template: [ViewNode])
+    case forEachCollection(collection: Expression, variable: String, template: [ViewNode])
     case modified(ViewNode, [ViewModifier])
 }
 
@@ -103,4 +104,5 @@ public enum RuntimeValue: Equatable, Sendable {
     case int(Int)
     case bool(Bool)
     case string(String)
+    case array([RuntimeValue])
 }

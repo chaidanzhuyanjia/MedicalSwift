@@ -118,4 +118,31 @@ final class MedicalSwiftCoreTests:XCTestCase{
  }
 
 
+ func testStaticArrayForEachLowering()throws{
+  let p=try SwiftSubsetParser().parse("""
+  import SwiftUI
+  struct ContentView: View {
+    let items = ["Pain", "Urinary", "QoL"]
+    var body: some View {
+      List {
+        ForEach(items, id: \.self) { item in
+          Text("Item: \\(item)")
+        }
+      }
+    }
+  }
+  """)
+  XCTAssertEqual(
+    p.state["items"],
+    .array([.string("Pain"),.string("Urinary"),.string("QoL")])
+  )
+  guard case .list(let children)=p.root,
+        case .forEachCollection(let collection,let variable,let template)=children.first
+  else{return XCTFail("Expected List > collection ForEach")}
+  XCTAssertEqual(collection,.variable("items"))
+  XCTAssertEqual(variable,"item")
+  XCTAssertEqual(template.count,1)
+ }
+
+
 }

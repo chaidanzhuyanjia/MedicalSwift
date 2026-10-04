@@ -179,25 +179,7 @@ public struct ASTLowerer {
         guard let first = call.arguments.first,
               let closure = call.trailingClosure
         else {
-            throw RuntimeDiagnostic("ForEach needs a range and trailing closure")
-        }
-
-        let raw = first.expression.trimmedDescription.replacingOccurrences(
-            of: " ",
-            with: ""
-        )
-        let parts = raw.components(separatedBy: "..<")
-        guard parts.count == 2, let start = Int(parts[0]) else {
-            throw RuntimeDiagnostic("ForEach currently supports Int start..<end")
-        }
-
-        let end: Expression
-        if let number = Int(parts[1]) {
-            end = .int(number)
-        } else if !parts[1].isEmpty {
-            end = .variable(parts[1])
-        } else {
-            throw RuntimeDiagnostic("ForEach range end is missing")
+            throw RuntimeDiagnostic("ForEach needs data and a trailing closure")
         }
 
         guard let clause = closure.signature?.parameterClause else {
@@ -221,9 +203,36 @@ public struct ASTLowerer {
         }
 
         let template = try closure.statements.map { try lowerItem($0) }
-        return .forEachRange(
-            start: start,
-            end: end,
+        let raw = first.expression.trimmedDescription
+            .replacingOccurrences(of: " ", with: "")
+
+        if raw.contains("..<") {
+            let parts = raw.components(separatedBy: "..<")
+            guard parts.count == 2, let start = Int(parts[0]) else {
+                throw RuntimeDiagnostic(
+                    "Range ForEach currently supports Int start..<end"
+                )
+            }
+
+            let end: Expression
+            if let number = Int(parts[1]) {
+                end = .int(number)
+            } else if !parts[1].isEmpty {
+                end = .variable(parts[1])
+            } else {
+                throw RuntimeDiagnostic("ForEach range end is missing")
+            }
+
+            return .forEachRange(
+                start: start,
+                end: end,
+                variable: variable,
+                template: template
+            )
+        }
+
+        return .forEachCollection(
+            collection: try ExpressionLowerer().lower(first.expression),
             variable: variable,
             template: template
         )

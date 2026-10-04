@@ -55,6 +55,12 @@ public struct ASTModelExtractor {
                         throw RuntimeDiagnostic("@State initializer must be an Int, Bool, or String literal.")
                     }
                 } else if name != "body",
+                          let initializer = binding.initializer?.value {
+                    model.state[name] = try literalRuntimeValue(
+                        from: initializer,
+                        lowerer: expressionLowerer
+                    )
+                } else if name != "body",
                           let accessorBlock = binding.accessorBlock,
                           case .getter(let items) = accessorBlock.accessors,
                           items.count == 1,
@@ -82,4 +88,33 @@ public struct ASTModelExtractor {
             return nil
         }
     }
+    private func literalRuntimeValue(
+        from expression: ExprSyntax,
+        lowerer: ExpressionLowerer
+    ) throws -> RuntimeValue {
+        if let array = expression.as(ArrayExprSyntax.self) {
+            return .array(
+                try array.elements.map {
+                    try literalRuntimeValue(
+                        from: $0.expression,
+                        lowerer: lowerer
+                    )
+                }
+            )
+        }
+
+        switch try lowerer.lower(expression) {
+        case .int(let value):
+            return .int(value)
+        case .bool(let value):
+            return .bool(value)
+        case .string(let value):
+            return .string(value)
+        default:
+            throw RuntimeDiagnostic(
+                "Stored properties currently support literal Int, Bool, String, or arrays of those literals."
+            )
+        }
+    }
+
 }

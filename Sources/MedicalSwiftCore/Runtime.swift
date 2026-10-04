@@ -150,6 +150,8 @@ public final class ScriptRuntime: ObservableObject {
         case .int(let number): return String(number)
         case .bool(let boolean): return boolean ? "true" : "false"
         case .string(let string): return string
+        case .array(let values):
+            return "[" + values.map { string($0) }.joined(separator: ", ") + "]"
         }
     }
 }

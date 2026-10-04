@@ -190,6 +190,21 @@ struct ContentView: View {
 }
 """
 
+        let arrayFixture = """
+import SwiftUI
+struct ContentView: View {
+    let items = ["Pain", "Urinary", "QoL"]
+
+    var body: some View {
+        List {
+            ForEach(items, id: \\.self) { item in
+                Text("Item: \\(item)")
+            }
+        }
+    }
+}
+"""
+
         do {
             let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             try FileManager.default.createDirectory(at: documents, withIntermediateDirectories: true)
@@ -198,11 +213,13 @@ struct ContentView: View {
             let pedtURL = documents.appendingPathComponent("ImportedPEDT.swift")
             let forEachURL = documents.appendingPathComponent("ImportedForEach.swift")
             let arithmeticURL = documents.appendingPathComponent("ImportedArithmetic.swift")
+            let arrayURL = documents.appendingPathComponent("ImportedArray.swift")
             let controlURL = documents.appendingPathComponent("MedicalSwiftControl.txt")
             try counterFixture.write(to: counterURL, atomically: true, encoding: .utf8)
             try pedtFixture.write(to: pedtURL, atomically: true, encoding: .utf8)
             try forEachFixture.write(to: forEachURL, atomically: true, encoding: .utf8)
             try arithmeticFixture.write(to: arithmeticURL, atomically: true, encoding: .utf8)
+            try arrayFixture.write(to: arrayURL, atomically: true, encoding: .utf8)
             try "MedicalSwift file-provider control".write(
                 to: controlURL,
                 atomically: true,
@@ -213,6 +230,7 @@ struct ContentView: View {
                 && FileManager.default.fileExists(atPath: pedtURL.path)
                 && FileManager.default.fileExists(atPath: forEachURL.path)
                 && FileManager.default.fileExists(atPath: arithmeticURL.path)
+                && FileManager.default.fileExists(atPath: arrayURL.path)
                 && FileManager.default.fileExists(atPath: controlURL.path)
         } catch {
             errorMessage = error.localizedDescription

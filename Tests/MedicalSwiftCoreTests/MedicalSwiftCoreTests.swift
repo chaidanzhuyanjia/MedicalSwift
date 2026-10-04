@@ -125,7 +125,7 @@ final class MedicalSwiftCoreTests:XCTestCase{
     let items = ["Pain", "Urinary", "QoL"]
     var body: some View {
       List {
-        ForEach(items, id: \.self) { item in
+        ForEach(items, id: \\.self) { item in
           Text("Item: \\(item)")
         }
       }

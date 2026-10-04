@@ -40,6 +40,14 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: MedicalSwift
         INFOPLIST_KEY_UIFileSharingEnabled: YES
         INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
+        INFOPLIST_KEY_CFBundleDocumentTypes_0_CFBundleTypeName: Swift Source
+        INFOPLIST_KEY_CFBundleDocumentTypes_0_CFBundleTypeRole: Editor
+        INFOPLIST_KEY_CFBundleDocumentTypes_0_LSHandlerRank: Alternate
+        INFOPLIST_KEY_CFBundleDocumentTypes_0_LSItemContentTypes_0: public.source-code
+        INFOPLIST_KEY_UTExportedTypeDeclarations_0_UTTypeIdentifier: com.medicalswift.swift-source
+        INFOPLIST_KEY_UTExportedTypeDeclarations_0_UTTypeDescription: Swift Source
+        INFOPLIST_KEY_UTExportedTypeDeclarations_0_UTTypeConformsTo_0: public.source-code
+        INFOPLIST_KEY_UTExportedTypeDeclarations_0_UTTypeTagSpecification_public_filename-extension_0: swift
         CODE_SIGNING_ALLOWED: NO
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: NO

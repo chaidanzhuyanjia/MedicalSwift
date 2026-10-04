@@ -91,10 +91,18 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
 
         repeat {
             for app in apps {
+                let predicate = NSPredicate(
+                    format: "label == %@ OR identifier == %@",
+                    name,
+                    name
+                )
                 let candidates = [
+                    app.descendants(matching: .any).matching(predicate).firstMatch,
                     app.cells.containing(.staticText, identifier: name).firstMatch,
+                    app.cells[name].firstMatch,
                     app.buttons[name].firstMatch,
-                    app.staticTexts[name].firstMatch
+                    app.staticTexts[name].firstMatch,
+                    app.otherElements[name].firstMatch
                 ]
 
                 for element in candidates where element.exists {

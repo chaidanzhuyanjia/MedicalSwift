@@ -85,7 +85,38 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
             return false
         }
 
-        return tapPickerItem(filename, in: pickerApps, timeout: 10)
+        if tapPickerItem(filename, in: pickerApps, timeout: 10) {
+            return true
+        }
+
+        let controlVisible = pickerItemExists("MedicalSwiftControl.txt", in: pickerApps)
+        print("PHASE10_DIAGNOSTIC control_txt_visible=\(controlVisible)")
+        print("PHASE10_DIAGNOSTIC runner_hierarchy=\n\(app.debugDescription)")
+        print("PHASE10_DIAGNOSTIC files_hierarchy=\n\(files.debugDescription)")
+        return false
+    }
+
+    private func pickerItemExists(_ name: String, in apps: [XCUIApplication]) -> Bool {
+        let predicate = NSPredicate(
+            format: "label == %@ OR identifier == %@",
+            name,
+            name
+        )
+
+        for app in apps {
+            let candidates = [
+                app.cells.containing(.staticText, identifier: name).firstMatch,
+                app.cells[name].firstMatch,
+                app.buttons[name].firstMatch,
+                app.staticTexts[name].firstMatch,
+                app.otherElements[name].firstMatch,
+                app.descendants(matching: .any).matching(predicate).firstMatch
+            ]
+            if candidates.contains(where: { $0.exists }) {
+                return true
+            }
+        }
+        return false
     }
 
     private func tapFolder(

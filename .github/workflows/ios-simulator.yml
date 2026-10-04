@@ -92,20 +92,6 @@ jobs:
           xcrun simctl boot "$UDID" || true
           xcrun simctl bootstatus "$UDID" -b
 
-      - name: Preinstall and register document container
-        run: |
-          APP="$RUNNER_TEMP/MedicalSwiftDerivedData/Build/Products/Debug-iphonesimulator/MedicalSwiftRunner.app"
-          UDID="${{ steps.simulator.outputs.udid }}"
-          xcrun simctl install "$UDID" "$APP"
-          SIMCTL_CHILD_MEDICALSWIFT_UI_TEST_SEED=1 \
-            xcrun simctl launch --terminate-running-process "$UDID" com.medicalswift.runner
-          sleep 3
-          DATA_CONTAINER="$(xcrun simctl get_app_container "$UDID" com.medicalswift.runner data)"
-          echo "Runner data container: $DATA_CONTAINER"
-          find "$DATA_CONTAINER/Documents" -maxdepth 1 -type f -print || true
-          xcrun simctl terminate "$UDID" com.medicalswift.runner || true
-          sleep 2
-
       - name: Run Runner UI acceptance
         run: |
           xcodebuild \

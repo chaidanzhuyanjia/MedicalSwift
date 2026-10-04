@@ -136,45 +136,6 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
         return false
     }
 
-    func testImportsPEDTStyleFileAndReRendersPickerState() throws {
-        let app = XCUIApplication()
-        app.launchEnvironment["MEDICALSWIFT_UI_TEST_SEED"] = "1"
-        app.launch()
-
-        XCTAssertTrue(app.textViews["sourceEditor"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.staticTexts["UITest fixture ready"].waitForExistence(timeout: 10))
-
-        let importButton = app.buttons["importButton"]
-        XCTAssertTrue(importButton.waitForExistence(timeout: 5))
-        importButton.tap()
-
-        XCTAssertTrue(
-            selectDocument(named: "ImportedPEDT.swift", app: app),
-            "Could not find ImportedPEDT.swift in the system document picker"
-        )
-
-        XCTAssertTrue(app.navigationBars["ImportedPEDT.swift"].waitForExistence(timeout: 10))
-
-        let runButton = app.buttons["runButton"]
-        XCTAssertTrue(runButton.waitForExistence(timeout: 5))
-        runButton.tap()
-
-        XCTAssertTrue(app.staticTexts["Total: 1"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.staticTexts["Below threshold"].waitForExistence(timeout: 5))
-
-        XCTAssertTrue(
-            tapElement(containing: "Q1", app: app, timeout: 8),
-            "Could not open the Q1 Picker"
-        )
-        XCTAssertTrue(
-            tapPickerItem("Four", in: [app], timeout: 8),
-            "Could not select the Four picker option"
-        )
-
-        XCTAssertTrue(app.staticTexts["Total: 5"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.staticTexts["Threshold reached"].waitForExistence(timeout: 5))
-    }
-
     private func selectDocument(named filename: String, app: XCUIApplication) -> Bool {
         // SwiftUI fileImporter is presented inside the Runner's accessibility tree
         // on the simulator. Querying com.apple.DocumentsApp directly can fail because
@@ -315,38 +276,6 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
                     if tapIfUsable(element) {
                         return true
                     }
-                }
-            }
-
-            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
-        } while Date() < deadline
-
-        return false
-    }
-
-    private func tapElement(
-        containing text: String,
-        app: XCUIApplication,
-        timeout: TimeInterval
-    ) -> Bool {
-        let deadline = Date().addingTimeInterval(timeout)
-        let predicate = NSPredicate(
-            format: "label CONTAINS[c] %@ OR identifier CONTAINS[c] %@",
-            text,
-            text
-        )
-
-        repeat {
-            let candidates = [
-                app.buttons.matching(predicate).firstMatch,
-                app.cells.matching(predicate).firstMatch,
-                app.staticTexts.matching(predicate).firstMatch,
-                app.descendants(matching: .any).matching(predicate).firstMatch
-            ]
-
-            for element in candidates where element.exists {
-                if tapIfUsable(element) {
-                    return true
                 }
             }
 

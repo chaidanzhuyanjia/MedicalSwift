@@ -43,12 +43,22 @@ public struct ASTLowerer{
   default:throw RuntimeDiagnostic("Unsupported SwiftUI call \(ref.baseName.text)")
   }
  }
- private func views(_ closure:ClosureExprSyntax?)throws->[ViewNode]{guard let closure else{throw RuntimeDiagnostic("Expected trailing closure")};return try closure.statements.map{guard let e=$0.item.as(ExprSyntax.self) else{throw RuntimeDiagnostic("Unsupported statement")};return try lowerExpr(e)}}
+ private func views(_ closure:ClosureExprSyntax?)throws->[ViewNode]{guard let closure else{throw RuntimeDiagnostic("Expected trailing closure")};return try closure.statements.map{try lowerItem($0)}}
+ private func lowerItem(_ item:CodeBlockItemSyntax)throws->ViewNode{
+  switch item.item{
+  case .expr(let e):return try lowerExpr(e)
+  case .stmt(let s):
+   if let x=s.as(ExpressionStmtSyntax.self){return try lowerExpr(x.expression)}
+   throw RuntimeDiagnostic("Unsupported statement: \(item.trimmedDescription)")
+  case .decl:
+   throw RuntimeDiagnostic("Unsupported declaration in view body: \(item.trimmedDescription)")
+  }
+ }
  private func lowerIf(_ i:IfExprSyntax)throws->ViewNode{
   guard let first=i.conditions.first,case .expression(let e)=first.condition,let seq=e.as(SequenceExprSyntax.self) else{throw RuntimeDiagnostic("Unsupported condition")}
   let a=Array(seq.elements);guard a.count==3,let op=CompareOperator(rawValue:a[1].trimmedDescription) else{throw RuntimeDiagnostic("Unsupported comparison")}
-  let yes=try i.body.statements.map{guard let e=$0.item.as(ExprSyntax.self) else{throw RuntimeDiagnostic("Bad if body")};return try lowerExpr(e)}
-  var no:[ViewNode]=[];if let eb=i.elseBody,case .codeBlock(let b)=eb{no=try b.statements.map{guard let e=$0.item.as(ExprSyntax.self) else{throw RuntimeDiagnostic("Bad else body")};return try lowerExpr(e)}}
+  let yes=try i.body.statements.map{try lowerItem($0)}
+  var no:[ViewNode]=[];if let eb=i.elseBody,case .codeBlock(let b)=eb{no=try b.statements.map{try lowerItem($0)}}
   return .conditional(condition:.compare(try value(a[0]),op,try value(a[2])),then:yes,otherwise:no)
  }
  private func value(_ e:ExprSyntax)throws->Expression{if let n=e.as(IntegerLiteralExprSyntax.self),let x=Int(n.literal.text){return .int(x)};if let r=e.as(DeclReferenceExprSyntax.self){return .variable(r.baseName.text)};throw RuntimeDiagnostic("Unsupported value")}

@@ -39,6 +39,7 @@ public struct ASTLowerer{
   case "TextField":guard c.arguments.count>=2,let t=string(c.arguments.first!.expression),let b=binding(c.arguments.dropFirst().first!.expression) else{throw RuntimeDiagnostic("Bad TextField")};return .textField(title:t,binding:b)
   case "Toggle":guard c.arguments.count>=2,let t=string(c.arguments.first!.expression),let b=binding(c.arguments.dropFirst().first!.expression) else{throw RuntimeDiagnostic("Bad Toggle")};return .toggle(title:t,binding:b)
   case "Picker":guard c.arguments.count>=2,let t=string(c.arguments.first!.expression),let b=binding(c.arguments.dropFirst().first!.expression) else{throw RuntimeDiagnostic("Bad Picker")};return .picker(title:t,selection:b,options:try options(c.trailingClosure))
+  case "ForEach":return try lowerForEach(c)
   case "Spacer":return .spacer
   default:throw RuntimeDiagnostic("Unsupported SwiftUI call \(ref.baseName.text)")
   }
@@ -53,6 +54,30 @@ public struct ASTLowerer{
   case .decl:
    throw RuntimeDiagnostic("Unsupported declaration in view body: \(item.trimmedDescription)")
   }
+ }
+ private func lowerForEach(_ c:FunctionCallExprSyntax)throws->ViewNode{
+  guard let first=c.arguments.first,let closure=c.trailingClosure else{throw RuntimeDiagnostic("ForEach needs a range and trailing closure")}
+  let raw=first.expression.trimmedDescription.replacingOccurrences(of:" ",with:"")
+  let parts=raw.components(separatedBy:"..<")
+  guard parts.count==2,let start=Int(parts[0]) else{throw RuntimeDiagnostic("ForEach currently supports Int start..<end")}
+  let end:Expression
+  if let n=Int(parts[1]){end = .int(n)}
+  else if !parts[1].isEmpty{end = .variable(parts[1])}
+  else{throw RuntimeDiagnostic("ForEach range end is missing")}
+
+  guard let clause=closure.signature?.parameterClause else{throw RuntimeDiagnostic("ForEach closure needs one parameter")}
+  let variable:String
+  switch clause{
+  case .simpleInput(let params):
+   guard params.count==1,let p=params.first else{throw RuntimeDiagnostic("ForEach closure needs one parameter")}
+   variable=p.name.text
+  case .parameterClause(let params):
+   guard params.parameters.count==1,let p=params.parameters.first else{throw RuntimeDiagnostic("ForEach closure needs one parameter")}
+   variable=(p.secondName ?? p.firstName).text
+  }
+
+  let template=try closure.statements.map{try lowerItem($0)}
+  return .forEachRange(start:start,end:end,variable:variable,template:template)
  }
  private func lowerIf(_ i:IfExprSyntax)throws->ViewNode{
   guard let first=i.conditions.first,case .expression(let e)=first.condition,let seq=e.as(SequenceExprSyntax.self) else{throw RuntimeDiagnostic("Unsupported condition")}

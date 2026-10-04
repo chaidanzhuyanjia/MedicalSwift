@@ -145,15 +145,31 @@ struct ContentView: View {
 }
 """
 
+        let forEachFixture = """
+import SwiftUI
+struct ContentView: View {
+    @State var count = 3
+    var body: some View {
+        VStack {
+            ForEach(0..<count, id: \.self) { i in
+                Text("Row \\(i)")
+            }
+        }
+    }
+}
+"""
+
         do {
             let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             try FileManager.default.createDirectory(at: documents, withIntermediateDirectories: true)
 
             let counterURL = documents.appendingPathComponent("ImportedCounter.swift")
             let pedtURL = documents.appendingPathComponent("ImportedPEDT.swift")
+            let forEachURL = documents.appendingPathComponent("ImportedForEach.swift")
             let controlURL = documents.appendingPathComponent("MedicalSwiftControl.txt")
             try counterFixture.write(to: counterURL, atomically: true, encoding: .utf8)
             try pedtFixture.write(to: pedtURL, atomically: true, encoding: .utf8)
+            try forEachFixture.write(to: forEachURL, atomically: true, encoding: .utf8)
             try "MedicalSwift file-provider control".write(
                 to: controlURL,
                 atomically: true,
@@ -162,6 +178,7 @@ struct ContentView: View {
             uiTestFixtureReady =
                 FileManager.default.fileExists(atPath: counterURL.path)
                 && FileManager.default.fileExists(atPath: pedtURL.path)
+                && FileManager.default.fileExists(atPath: forEachURL.path)
                 && FileManager.default.fileExists(atPath: controlURL.path)
         } catch {
             errorMessage = error.localizedDescription

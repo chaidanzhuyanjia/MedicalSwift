@@ -65,4 +65,27 @@ final class MedicalSwiftCoreTests:XCTestCase{
   XCTAssertEqual(sectionChildren.count,3)
  }
 
+ func testForEachRangeLowering()throws{
+  let p=try SwiftSubsetParser().parse("""
+  import SwiftUI
+  struct ContentView: View {
+    @State var count = 3
+    var body: some View {
+      VStack {
+        ForEach(0..<count, id: \.self) { i in
+          Text("Row \\(i)")
+        }
+      }
+    }
+  }
+  """)
+  guard case .vStack(let children)=p.root,
+        case .forEachRange(let start,let end,let variable,let template)=children.first
+  else{return XCTFail("Expected VStack > ForEach range")}
+  XCTAssertEqual(start,0)
+  XCTAssertEqual(end,.variable("count"))
+  XCTAssertEqual(variable,"i")
+  XCTAssertEqual(template.count,1)
+ }
+
 }

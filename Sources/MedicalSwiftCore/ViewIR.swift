@@ -5,6 +5,7 @@ public indirect enum ViewNode:Equatable,Sendable{
  case vStack([ViewNode]),hStack([ViewNode]),form([ViewNode]),list([ViewNode]),navigationStack([ViewNode])
  case section(title:String?,children:[ViewNode]),picker(title:String,selection:String,options:[PickerOption])
  case conditional(condition:Condition,then:[ViewNode],otherwise:[ViewNode]),spacer
+ case forEachRange(start:Int,end:Expression,variable:String,template:[ViewNode])
  case modified(ViewNode,[ViewModifier])
 }
 public enum ViewModifier:Equatable,Sendable{case padding,navigationTitle(String),font(FontToken)}

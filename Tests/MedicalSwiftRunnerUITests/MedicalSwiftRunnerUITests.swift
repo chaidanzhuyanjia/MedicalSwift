@@ -86,6 +86,25 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Higher score"].waitForExistence(timeout: 5))
     }
 
+    func testLoadsForEachFileAndRendersRange() throws {
+        let app = XCUIApplication()
+        app.launchEnvironment["MEDICALSWIFT_UI_TEST_SEED"] = "1"
+        app.launchEnvironment["MEDICALSWIFT_UI_TEST_AUTOLOAD"] = "ImportedForEach.swift"
+        app.launch()
+
+        XCTAssertTrue(app.textViews["sourceEditor"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["UITest fixture ready"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.navigationBars["ImportedForEach.swift"].waitForExistence(timeout: 10))
+
+        let runButton = app.buttons["runButton"]
+        XCTAssertTrue(runButton.waitForExistence(timeout: 5))
+        runButton.tap()
+
+        XCTAssertTrue(app.staticTexts["Row 0"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Row 1"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Row 2"].waitForExistence(timeout: 5))
+    }
+
     private func tapPickerRow(named name: String, app: XCUIApplication) -> Bool {
         let cell = app.cells.containing(.staticText, identifier: name).firstMatch
         if cell.waitForExistence(timeout: 5) {

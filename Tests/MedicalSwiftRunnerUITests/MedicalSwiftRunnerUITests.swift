@@ -84,6 +84,8 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
         guard tapFolder(named: "MedicalSwift", in: pickerApps, timeout: 6)
             || tapFolder(named: "MedicalSwiftRunner", in: pickerApps, timeout: 3)
         else {
+            print("PHASE10_DIAGNOSTIC folder_not_found")
+            print("PHASE10_DIAGNOSTIC runner_hierarchy=\n\(app.debugDescription)")
             return false
         }
 
@@ -126,34 +128,44 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
         timeout: TimeInterval
     ) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
+        let predicate = NSPredicate(
+            format: "label == %@ OR identifier == %@",
+            name,
+            name
+        )
 
         repeat {
             for app in apps {
-                let cells = [
+                let cellCandidates = [
                     app.cells.containing(.staticText, identifier: name).firstMatch,
                     app.cells[name].firstMatch
                 ]
 
-                for element in cells where element.exists {
+                for element in cellCandidates where element.exists {
                     if tapIfUsable(element) {
                         return true
                     }
                 }
 
-                let labels = app.staticTexts.matching(identifier: name)
+                // The Runner itself also has a "MedicalSwift" navigation title.
+                // When the document picker is open, choose the matching label
+                // furthest down the screen; that is the Files folder row/grid item,
+                // not the navigation chrome at the top.
+                let labels = app.staticTexts.matching(predicate)
+                var visibleLabels: [XCUIElement] = []
                 for index in 0..<labels.count {
                     let element = labels.element(boundBy: index)
-                    guard element.exists, !element.frame.isEmpty else { continue }
-
-                    // Avoid the Runner's own "MedicalSwift" navigation title.
-                    let navBar = app.navigationBars.firstMatch
-                    if navBar.exists, navBar.frame.intersects(element.frame) {
-                        continue
+                    if element.exists, !element.frame.isEmpty {
+                        visibleLabels.append(element)
                     }
+                }
 
-                    if tapIfUsable(element) {
-                        return true
-                    }
+                if let folderLabel = visibleLabels.max(by: {
+                    $0.frame.midY < $1.frame.midY
+                }),
+                folderLabel.frame.midY > 100,
+                tapIfUsable(folderLabel) {
+                    return true
                 }
             }
 

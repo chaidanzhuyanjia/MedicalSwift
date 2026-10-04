@@ -107,11 +107,20 @@ struct ContentView: View {
         do {
             let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             try FileManager.default.createDirectory(at: documents, withIntermediateDirectories: true)
-            try fixture.write(
-                to: documents.appendingPathComponent("ImportedCounter.swift"),
-                atomically: true,
-                encoding: .utf8
-            )
+
+            let fixtureURL = documents.appendingPathComponent("ImportedCounter.swift")
+            try fixture.write(to: fixtureURL, atomically: true, encoding: .utf8)
+
+            if let sharedDocuments = FileManager.default.containerURL(
+                forSecurityApplicationGroupIdentifier: "group.com.medicalswift.runner.uitest"
+            ) {
+                try? FileManager.default.createDirectory(at: sharedDocuments, withIntermediateDirectories: true)
+                try? fixture.write(
+                    to: sharedDocuments.appendingPathComponent("ImportedCounter.swift"),
+                    atomically: true,
+                    encoding: .utf8
+                )
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

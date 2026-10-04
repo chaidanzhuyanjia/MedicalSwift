@@ -12,7 +12,6 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
 
         let editor = app.textViews["sourceEditor"]
         XCTAssertTrue(editor.waitForExistence(timeout: 10))
-
         let importButton = app.buttons["importButton"]
         XCTAssertTrue(importButton.waitForExistence(timeout: 5))
 
@@ -37,6 +36,10 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
 
         let editor = app.textViews["sourceEditor"]
         XCTAssertTrue(editor.waitForExistence(timeout: 10))
+        XCTAssertTrue(
+            app.staticTexts["UITest fixture ready"].waitForExistence(timeout: 10),
+            "ImportedCounter.swift was not created in the Runner Documents directory"
+        )
 
         let importButton = app.buttons["importButton"]
         XCTAssertTrue(importButton.waitForExistence(timeout: 5))

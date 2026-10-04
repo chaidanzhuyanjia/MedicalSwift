@@ -62,48 +62,56 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
 
     private func selectDocument(named filename: String, app: XCUIApplication) -> Bool {
         let files = XCUIApplication(bundleIdentifier: "com.apple.DocumentsApp")
+        let apps = [app, files]
 
-        if tapIfPresent([
-            app.staticTexts[filename].firstMatch,
-            files.staticTexts[filename].firstMatch
-        ], timeout: 2) {
+        if tapNamedItem(filename, in: apps, timeout: 2) {
             return true
         }
 
-        _ = tapIfPresent([
-            app.tabBars.buttons["Browse"].firstMatch,
-            files.tabBars.buttons["Browse"].firstMatch,
-            app.buttons["Browse"].firstMatch,
-            files.buttons["Browse"].firstMatch
-        ], timeout: 3)
+        _ = tapNamedItem("Browse", in: apps, timeout: 3)
 
-        if tapIfPresent([
-            app.staticTexts["On My iPhone"].firstMatch,
-            files.staticTexts["On My iPhone"].firstMatch
-        ], timeout: 5) {
-            _ = tapIfPresent([
-                app.staticTexts["MedicalSwift"].firstMatch,
-                files.staticTexts["MedicalSwift"].firstMatch,
-                app.staticTexts["MedicalSwiftRunner"].firstMatch,
-                files.staticTexts["MedicalSwiftRunner"].firstMatch
-            ], timeout: 5)
+        if tapNamedItem("On My iPhone", in: apps, timeout: 5) {
+            if !tapNamedItem("MedicalSwift", in: apps, timeout: 5) {
+                _ = tapNamedItem("MedicalSwiftRunner", in: apps, timeout: 3)
+            }
         }
 
-        return tapIfPresent([
-            app.staticTexts[filename].firstMatch,
-            files.staticTexts[filename].firstMatch
-        ], timeout: 8)
+        return tapNamedItem(filename, in: apps, timeout: 8)
     }
 
-    private func tapIfPresent(_ elements: [XCUIElement], timeout: TimeInterval) -> Bool {
+    private func tapNamedItem(
+        _ name: String,
+        in apps: [XCUIApplication],
+        timeout: TimeInterval
+    ) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
+
         repeat {
-            for element in elements where element.exists && element.isHittable {
-                element.tap()
-                return true
+            for app in apps {
+                let candidates = [
+                    app.cells.containing(.staticText, identifier: name).firstMatch,
+                    app.buttons[name].firstMatch,
+                    app.staticTexts[name].firstMatch
+                ]
+
+                for element in candidates where element.exists {
+                    if element.isHittable {
+                        element.tap()
+                        return true
+                    }
+
+                    if !element.frame.isEmpty {
+                        element.coordinate(
+                            withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)
+                        ).tap()
+                        return true
+                    }
+                }
             }
+
             RunLoop.current.run(until: Date().addingTimeInterval(0.2))
         } while Date() < deadline
+
         return false
     }
 

@@ -133,37 +133,39 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
     }
 
     private func selectDocument(named filename: String, app: XCUIApplication) -> Bool {
-        // SwiftUI fileImporter is presented inside the Runner's accessibility tree
-        // on the simulator. Querying com.apple.DocumentsApp directly can fail because
-        // that application is not running while the picker UI is hosted in-process.
+        // SwiftUI fileImporter is presented inside the Runner accessibility tree.
+        // Files can reopen in the last visited location and its local-provider index
+        // can lag briefly after XCTest reinstalls the app, so treat navigation as a
+        // small state machine instead of assuming one fixed screen.
         let pickerApps = [app]
 
-        if tapDocument(named: filename, in: pickerApps, timeout: 2) {
+        if tapDocument(named: filename, in: pickerApps, timeout: 8) {
             return true
         }
 
-        guard tapPickerItem("Browse", in: pickerApps, timeout: 4) else {
-            return false
-        }
+        // "Browse" may be absent when the picker already reopened on a browse page.
+        _ = tapPickerItem("Browse", in: pickerApps, timeout: 3)
 
-        guard tapPickerItem("On My iPhone", in: pickerApps, timeout: 6) else {
-            return false
-        }
-
-        guard tapFolder(named: "MedicalSwift", in: pickerApps, timeout: 6)
-            || tapFolder(named: "MedicalSwiftRunner", in: pickerApps, timeout: 3)
-        else {
-            print("PHASE10_DIAGNOSTIC folder_not_found")
-            print("PHASE10_DIAGNOSTIC runner_hierarchy=\n\(app.debugDescription)")
-            return false
-        }
-
-        if tapDocument(named: filename, in: pickerApps, timeout: 10) {
+        if tapDocument(named: filename, in: pickerApps, timeout: 4) {
             return true
+        }
+
+        // Likewise, On My iPhone may already be the active location.
+        _ = tapPickerItem("On My iPhone", in: pickerApps, timeout: 6)
+
+        if tapDocument(named: filename, in: pickerApps, timeout: 4) {
+            return true
+        }
+
+        if tapFolder(named: "MedicalSwift", in: pickerApps, timeout: 6)
+            || tapFolder(named: "MedicalSwiftRunner", in: pickerApps, timeout: 3) {
+            if tapDocument(named: filename, in: pickerApps, timeout: 15) {
+                return true
+            }
         }
 
         let controlVisible = pickerItemExists("MedicalSwiftControl.txt", in: pickerApps)
-        print("PHASE10_DIAGNOSTIC control_txt_visible=\(controlVisible)")
+        print("PHASE10_DIAGNOSTIC target=\(filename) control_txt_visible=\(controlVisible)")
         print("PHASE10_DIAGNOSTIC runner_hierarchy=\n\(app.debugDescription)")
         return false
     }

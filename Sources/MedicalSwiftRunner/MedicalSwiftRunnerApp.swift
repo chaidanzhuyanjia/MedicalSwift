@@ -79,6 +79,7 @@ struct ContentView: View {
                 }
                 .task {
                     seedUITestFixtureIfRequested()
+                    autoloadUITestFixtureIfRequested()
                 }
                 .alert(
                     "Cannot run",
@@ -165,6 +166,25 @@ struct ContentView: View {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func autoloadUITestFixtureIfRequested() {
+        guard let filename =
+            ProcessInfo.processInfo.environment["MEDICALSWIFT_UI_TEST_AUTOLOAD"],
+            !filename.isEmpty
+        else { return }
+
+        let documents = FileManager.default.urls(
+            for: .documentDirectory,
+            in: .userDomainMask
+        )[0]
+        let url = documents.appendingPathComponent(filename)
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            errorMessage = "UI test fixture not found: \(filename)"
+            return
+        }
+
+        importSource(.success([url]))
     }
 
     private func importSource(_ result: Result<[URL], Error>) {

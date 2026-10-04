@@ -61,22 +61,16 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Count: 42"].waitForExistence(timeout: 5))
     }
 
-    func testImportsPEDTFormPickerComputedConditional() throws {
+    func testLoadsPEDTFileAndReRendersPickerComputedConditional() throws {
         let app = XCUIApplication()
         app.launchEnvironment["MEDICALSWIFT_UI_TEST_SEED"] = "1"
+        app.launchEnvironment["MEDICALSWIFT_UI_TEST_AUTOLOAD"] = "ImportedPEDT.swift"
         app.launch()
 
         XCTAssertTrue(app.textViews["sourceEditor"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["UITest fixture ready"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.navigationBars["ImportedPEDT.swift"].waitForExistence(timeout: 10))
 
-        let importButton = app.buttons["importButton"]
-        XCTAssertTrue(importButton.waitForExistence(timeout: 5))
-        importButton.tap()
-
-        XCTAssertTrue(
-            selectDocument(named: "ImportedPEDT.swift", app: app),
-            "Could not find ImportedPEDT.swift in the system document picker"
-        )
         let runButton = app.buttons["runButton"]
         XCTAssertTrue(runButton.waitForExistence(timeout: 5))
         runButton.tap()

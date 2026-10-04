@@ -69,6 +69,9 @@ struct ContentView: View {
                 ) { result in
                     importSource(result)
                 }
+                .task {
+                    seedUITestFixtureIfRequested()
+                }
                 .alert(
                     "Cannot run",
                     isPresented: Binding(
@@ -80,6 +83,37 @@ struct ContentView: View {
                 } message: {
                     Text(errorMessage ?? "")
                 }
+        }
+    }
+
+    private func seedUITestFixtureIfRequested() {
+        guard ProcessInfo.processInfo.environment["MEDICALSWIFT_UI_TEST_SEED"] == "1" else { return }
+
+        let fixture = """
+import SwiftUI
+struct ContentView: View {
+    @State var count = 0
+    var body: some View {
+        VStack {
+            Text("Count: \\(count)")
+            Button("Tap me") {
+                count += 1
+            }
+        }
+    }
+}
+"""
+
+        do {
+            let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            try FileManager.default.createDirectory(at: documents, withIntermediateDirectories: true)
+            try fixture.write(
+                to: documents.appendingPathComponent("ImportedCounter.swift"),
+                atomically: true,
+                encoding: .utf8
+            )
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 

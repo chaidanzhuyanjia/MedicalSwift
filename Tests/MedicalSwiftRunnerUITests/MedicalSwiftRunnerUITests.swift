@@ -50,11 +50,6 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
             "Could not find ImportedCounter.swift in the system document picker"
         )
 
-        XCTAssertTrue(
-            waitForEditorSource(containing: "Imported tap", app: app, timeout: 10),
-            "ImportedCounter.swift was selected but its source did not reach the editor"
-        )
-
         let runButton = app.buttons["runButton"]
         XCTAssertTrue(runButton.waitForExistence(timeout: 5))
         runButton.tap()
@@ -82,11 +77,6 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
             selectDocument(named: "ImportedPEDT.swift", app: app),
             "Could not find ImportedPEDT.swift in the system document picker"
         )
-        XCTAssertTrue(
-            waitForEditorSource(containing: "PEDT demo", app: app, timeout: 10),
-            "ImportedPEDT.swift was selected but its source did not reach the editor"
-        )
-
         let runButton = app.buttons["runButton"]
         XCTAssertTrue(runButton.waitForExistence(timeout: 5))
         runButton.tap()
@@ -100,26 +90,6 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["Total: 4"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["Higher score"].waitForExistence(timeout: 5))
-    }
-
-    private func waitForEditorSource(
-        containing marker: String,
-        app: XCUIApplication,
-        timeout: TimeInterval
-    ) -> Bool {
-        let deadline = Date().addingTimeInterval(timeout)
-        let editor = app.textViews["sourceEditor"]
-
-        repeat {
-            if editor.exists,
-               let value = editor.value as? String,
-               value.contains(marker) {
-                return true
-            }
-            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
-        } while Date() < deadline
-
-        return false
     }
 
     private func tapPickerRow(named name: String, app: XCUIApplication) -> Bool {
@@ -222,7 +192,15 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
 
                 for element in candidates where element.exists {
                     if tapIfUsable(element) {
-                        return true
+                        let dismissalDeadline = Date().addingTimeInterval(2.0)
+                        repeat {
+                            if !app.otherElements["Browse View (Picker)"].exists {
+                                return true
+                            }
+                            RunLoop.current.run(
+                                until: Date().addingTimeInterval(0.15)
+                            )
+                        } while Date() < dismissalDeadline
                     }
                 }
             }

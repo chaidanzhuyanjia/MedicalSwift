@@ -67,7 +67,7 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
         let files = XCUIApplication(bundleIdentifier: "com.apple.DocumentsApp")
         let apps = [app, files]
 
-        if tapNamedItem(filename, in: apps, timeout: 2) {
+        if tapNamedItem(filename, in: apps, timeout: 2, includeAnyElement: true) {
             return true
         }
 
@@ -79,13 +79,14 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
             }
         }
 
-        return tapNamedItem(filename, in: apps, timeout: 8)
+        return tapNamedItem(filename, in: apps, timeout: 8, includeAnyElement: true)
     }
 
     private func tapNamedItem(
         _ name: String,
         in apps: [XCUIApplication],
-        timeout: TimeInterval
+        timeout: TimeInterval,
+        includeAnyElement: Bool = false
     ) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
 
@@ -96,14 +97,18 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
                     name,
                     name
                 )
-                let candidates = [
+                var candidates = [
                     app.cells.containing(.staticText, identifier: name).firstMatch,
                     app.cells[name].firstMatch,
                     app.buttons[name].firstMatch,
                     app.staticTexts[name].firstMatch,
-                    app.otherElements[name].firstMatch,
-                    app.descendants(matching: .any).matching(predicate).firstMatch
+                    app.otherElements[name].firstMatch
                 ]
+                if includeAnyElement {
+                    candidates.append(
+                        app.descendants(matching: .any).matching(predicate).firstMatch
+                    )
+                }
 
                 for element in candidates where element.exists {
                     if element.isHittable {

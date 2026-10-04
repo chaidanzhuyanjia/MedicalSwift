@@ -13,6 +13,9 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
         let editor = app.textViews["sourceEditor"]
         XCTAssertTrue(editor.waitForExistence(timeout: 10))
 
+        let importButton = app.buttons["importButton"]
+        XCTAssertTrue(importButton.waitForExistence(timeout: 5))
+
         let runButton = app.buttons["runButton"]
         XCTAssertTrue(runButton.waitForExistence(timeout: 5))
         runButton.tap()

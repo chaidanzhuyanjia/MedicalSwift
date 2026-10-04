@@ -233,17 +233,6 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
         return false
     }
 
-    private func waitForEditor(
-        _ app: XCUIApplication,
-        toContain needle: String,
-        timeout: TimeInterval
-    ) -> Bool {
-        let editor = app.textViews["sourceEditor"]
-        let predicate = NSPredicate(format: "value CONTAINS %@", needle)
-        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: editor)
-        return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
-    }
-
     private func pickerItemExists(_ name: String, in apps: [XCUIApplication]) -> Bool {
         let predicate = NSPredicate(
             format: "label == %@ OR identifier == %@",

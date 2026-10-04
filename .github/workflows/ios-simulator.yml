@@ -106,7 +106,7 @@ jobs:
           xcrun simctl terminate "$UDID" com.medicalswift.runner || true
           sleep 2
 
-      - name: Run Counter UI acceptance
+      - name: Run Runner UI acceptance
         run: |
           xcodebuild \
             -project MedicalSwift.xcodeproj \

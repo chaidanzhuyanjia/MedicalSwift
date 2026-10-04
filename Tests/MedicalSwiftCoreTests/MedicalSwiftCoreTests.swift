@@ -134,12 +134,14 @@ final class MedicalSwiftCoreTests:XCTestCase{
   """)
   XCTAssertEqual(
     p.state["items"],
-    .array([.string("Pain"),.string("Urinary"),.string("QoL")])
+    RuntimeValue.array([
+      .string("Pain"), .string("Urinary"), .string("QoL")
+    ])
   )
   guard case .list(let children)=p.root,
         case .forEachCollection(let collection,let variable,let template)=children.first
   else{return XCTFail("Expected List > collection ForEach")}
-  XCTAssertEqual(collection,.variable("items"))
+  XCTAssertEqual(collection,Expression.variable("items"))
   XCTAssertEqual(variable,"item")
   XCTAssertEqual(template.count,1)
  }

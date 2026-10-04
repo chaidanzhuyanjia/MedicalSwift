@@ -1,0 +1,105 @@
+name: iOS Simulator CI
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  simulator-build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Resolve package dependencies
+        run: xcodebuild -resolvePackageDependencies -project MedicalSwift.xcodeproj -scheme MedicalSwiftRunner
+
+      - name: Build for iOS Simulator
+        run: |
+          rm -rf "$RUNNER_TEMP/MedicalSwiftDerivedData"
+          xcodebuild \
+            -project MedicalSwift.xcodeproj \
+            -scheme MedicalSwiftRunner \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/MedicalSwiftDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Verify document container metadata
+        run: |
+          APP="$RUNNER_TEMP/MedicalSwiftDerivedData/Build/Products/Debug-iphonesimulator/MedicalSwiftRunner.app"
+          PLIST="$APP/Info.plist"
+          test -f "$PLIST"
+          python3 - "$PLIST" <<'PY'
+          import plistlib, sys
+          path = sys.argv[1]
+          with open(path, "rb") as f:
+              p = plistlib.load(f)
+
+          required_true = [
+              "UIFileSharingEnabled",
+              "LSSupportsOpeningDocumentsInPlace",
+              "UISupportsDocumentBrowser",
+          ]
+          for key in required_true:
+              value = p.get(key)
+              print(f"{key}={value!r}")
+              if value is not True:
+                  raise SystemExit(f"{key} must be true in the built app Info.plist")
+
+          doc_types = p.get("CFBundleDocumentTypes", [])
+          print("CFBundleDocumentTypes=", doc_types)
+          flattened = [
+              item
+              for doc in doc_types
+              for item in doc.get("LSItemContentTypes", [])
+          ]
+          if "public.swift-source" not in flattened:
+              raise SystemExit("public.swift-source missing from CFBundleDocumentTypes")
+          PY
+
+      - name: Package unsigned simulator app
+        run: |
+          APP="$RUNNER_TEMP/MedicalSwiftDerivedData/Build/Products/Debug-iphonesimulator/MedicalSwiftRunner.app"
+          test -d "$APP"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "$RUNNER_TEMP/MedicalSwiftRunner-simulator.zip"
+
+      - name: Upload simulator app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MedicalSwiftRunner-simulator
+          path: ${{ runner.temp }}/MedicalSwiftRunner-simulator.zip
+          if-no-files-found: error
+
+      - name: Select and boot iPhone Simulator
+        id: simulator
+        run: |
+          UDID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; xs=[x for vs in d.values() for x in vs if x.get("isAvailable") and x.get("name","").startswith("iPhone")]; print(xs[0]["udid"] if xs else "")')"
+          test -n "$UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+
+      - name: Run Runner UI acceptance
+        run: |
+          xcodebuild \
+            -project MedicalSwift.xcodeproj \
+            -scheme MedicalSwiftRunner \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}" \
+            -derivedDataPath "$RUNNER_TEMP/MedicalSwiftDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            test

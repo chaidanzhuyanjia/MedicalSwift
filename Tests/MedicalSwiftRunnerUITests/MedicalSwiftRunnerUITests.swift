@@ -168,7 +168,7 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
         // that application is not running while the picker UI is hosted in-process.
         let pickerApps = [app]
 
-        if tapPickerItem(filename, in: pickerApps, timeout: 2) {
+        if tapDocument(named: filename, in: pickerApps, timeout: 2) {
             return true
         }
 
@@ -188,7 +188,7 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
             return false
         }
 
-        if tapPickerItem(filename, in: pickerApps, timeout: 10) {
+        if tapDocument(named: filename, in: pickerApps, timeout: 10) {
             return true
         }
 
@@ -196,6 +196,52 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
         print("PHASE10_DIAGNOSTIC control_txt_visible=\(controlVisible)")
         print("PHASE10_DIAGNOSTIC runner_hierarchy=\n\(app.debugDescription)")
         return false
+    }
+
+    private func tapDocument(
+        named filename: String,
+        in apps: [XCUIApplication],
+        timeout: TimeInterval
+    ) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+
+        repeat {
+            for app in apps {
+                let prefix = NSPredicate(
+                    format: "label BEGINSWITH[c] %@ OR identifier == %@",
+                    filename,
+                    filename
+                )
+
+                let candidates = [
+                    app.cells.matching(prefix).firstMatch,
+                    app.buttons.matching(prefix).firstMatch,
+                    app.staticTexts[filename].firstMatch,
+                    app.descendants(matching: .any).matching(prefix).firstMatch
+                ]
+
+                for element in candidates where element.exists {
+                    if tapIfUsable(element) {
+                        return true
+                    }
+                }
+            }
+
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        } while Date() < deadline
+
+        return false
+    }
+
+    private func waitForEditor(
+        _ app: XCUIApplication,
+        toContain needle: String,
+        timeout: TimeInterval
+    ) -> Bool {
+        let editor = app.textViews["sourceEditor"]
+        let predicate = NSPredicate(format: "value CONTAINS %@", needle)
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: editor)
+        return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
     }
 
     private func pickerItemExists(_ name: String, in apps: [XCUIApplication]) -> Bool {

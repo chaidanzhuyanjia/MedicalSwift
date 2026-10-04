@@ -92,11 +92,11 @@ struct ContentView: View {
         let fixture = """
 import SwiftUI
 struct ContentView: View {
-    @State var count = 0
+    @State var count = 41
     var body: some View {
         VStack {
             Text("Count: \\(count)")
-            Button("Tap me") {
+            Button("Imported tap") {
                 count += 1
             }
         }

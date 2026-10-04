@@ -30,4 +30,28 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
         let updatedCount = app.staticTexts["Count: 1"]
         XCTAssertTrue(updatedCount.waitForExistence(timeout: 5))
     }
+    func testImportsSwiftFileThroughDocumentPickerAndRuns() throws {
+        let app = XCUIApplication()
+        app.launchEnvironment["MEDICALSWIFT_UI_TEST_SEED"] = "1"
+        app.launch()
+
+        let editor = app.textViews["sourceEditor"]
+        XCTAssertTrue(editor.waitForExistence(timeout: 10))
+
+        let importButton = app.buttons["importButton"]
+        XCTAssertTrue(importButton.waitForExistence(timeout: 5))
+        importButton.tap()
+
+        let fixture = app.staticTexts["ImportedCounter.swift"].firstMatch
+        XCTAssertTrue(fixture.waitForExistence(timeout: 10))
+        fixture.tap()
+
+        let runButton = app.buttons["runButton"]
+        XCTAssertTrue(runButton.waitForExistence(timeout: 5))
+        runButton.tap()
+
+        XCTAssertTrue(app.staticTexts["Count: 0"].waitForExistence(timeout: 10))
+        app.buttons["Tap me"].tap()
+        XCTAssertTrue(app.staticTexts["Count: 1"].waitForExistence(timeout: 5))
+    }
 }

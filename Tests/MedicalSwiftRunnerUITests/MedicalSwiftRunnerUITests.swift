@@ -65,28 +65,76 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
 
     private func selectDocument(named filename: String, app: XCUIApplication) -> Bool {
         let files = XCUIApplication(bundleIdentifier: "com.apple.DocumentsApp")
-        let apps = [app, files]
+        let pickerApps = [files, app]
 
-        if tapNamedItem(filename, in: apps, timeout: 2, includeAnyElement: true) {
+        if tapPickerItem(filename, in: pickerApps, timeout: 2) {
             return true
         }
 
-        _ = tapNamedItem("Browse", in: apps, timeout: 3)
-
-        if tapNamedItem("On My iPhone", in: apps, timeout: 5) {
-            if !tapNamedItem("MedicalSwift", in: apps, timeout: 5) {
-                _ = tapNamedItem("MedicalSwiftRunner", in: apps, timeout: 3)
-            }
+        guard tapPickerItem("Browse", in: pickerApps, timeout: 4) else {
+            return false
         }
 
-        return tapNamedItem(filename, in: apps, timeout: 8, includeAnyElement: true)
+        guard tapPickerItem("On My iPhone", in: pickerApps, timeout: 6) else {
+            return false
+        }
+
+        guard tapFolder(named: "MedicalSwift", in: pickerApps, timeout: 6)
+            || tapFolder(named: "MedicalSwiftRunner", in: pickerApps, timeout: 3)
+        else {
+            return false
+        }
+
+        return tapPickerItem(filename, in: pickerApps, timeout: 10)
     }
 
-    private func tapNamedItem(
+    private func tapFolder(
+        named name: String,
+        in apps: [XCUIApplication],
+        timeout: TimeInterval
+    ) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+
+        repeat {
+            for app in apps {
+                let cells = [
+                    app.cells.containing(.staticText, identifier: name).firstMatch,
+                    app.cells[name].firstMatch
+                ]
+
+                for element in cells where element.exists {
+                    if tapIfUsable(element) {
+                        return true
+                    }
+                }
+
+                let labels = app.staticTexts.matching(identifier: name)
+                for index in 0..<labels.count {
+                    let element = labels.element(boundBy: index)
+                    guard element.exists, !element.frame.isEmpty else { continue }
+
+                    // Avoid the Runner's own "MedicalSwift" navigation title.
+                    let navBar = app.navigationBars.firstMatch
+                    if navBar.exists, navBar.frame.intersects(element.frame) {
+                        continue
+                    }
+
+                    if tapIfUsable(element) {
+                        return true
+                    }
+                }
+            }
+
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        } while Date() < deadline
+
+        return false
+    }
+
+    private func tapPickerItem(
         _ name: String,
         in apps: [XCUIApplication],
-        timeout: TimeInterval,
-        includeAnyElement: Bool = false
+        timeout: TimeInterval
     ) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
 
@@ -97,29 +145,18 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
                     name,
                     name
                 )
-                var candidates = [
+
+                let candidates = [
                     app.cells.containing(.staticText, identifier: name).firstMatch,
                     app.cells[name].firstMatch,
                     app.buttons[name].firstMatch,
                     app.staticTexts[name].firstMatch,
-                    app.otherElements[name].firstMatch
+                    app.otherElements[name].firstMatch,
+                    app.descendants(matching: .any).matching(predicate).firstMatch
                 ]
-                if includeAnyElement {
-                    candidates.append(
-                        app.descendants(matching: .any).matching(predicate).firstMatch
-                    )
-                }
 
                 for element in candidates where element.exists {
-                    if element.isHittable {
-                        element.tap()
-                        return true
-                    }
-
-                    if !element.frame.isEmpty {
-                        element.coordinate(
-                            withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)
-                        ).tap()
+                    if tapIfUsable(element) {
                         return true
                     }
                 }
@@ -127,6 +164,22 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
 
             RunLoop.current.run(until: Date().addingTimeInterval(0.2))
         } while Date() < deadline
+
+        return false
+    }
+
+    private func tapIfUsable(_ element: XCUIElement) -> Bool {
+        if element.isHittable {
+            element.tap()
+            return true
+        }
+
+        if !element.frame.isEmpty {
+            element.coordinate(
+                withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)
+            ).tap()
+            return true
+        }
 
         return false
     }

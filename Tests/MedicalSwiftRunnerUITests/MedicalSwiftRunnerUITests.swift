@@ -97,12 +97,12 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
                     name
                 )
                 let candidates = [
-                    app.descendants(matching: .any).matching(predicate).firstMatch,
                     app.cells.containing(.staticText, identifier: name).firstMatch,
                     app.cells[name].firstMatch,
                     app.buttons[name].firstMatch,
                     app.staticTexts[name].firstMatch,
-                    app.otherElements[name].firstMatch
+                    app.otherElements[name].firstMatch,
+                    app.descendants(matching: .any).matching(predicate).firstMatch
                 ]
 
                 for element in candidates where element.exists {

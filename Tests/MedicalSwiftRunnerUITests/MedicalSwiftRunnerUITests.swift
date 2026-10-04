@@ -64,8 +64,10 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
     }
 
     private func selectDocument(named filename: String, app: XCUIApplication) -> Bool {
-        let files = XCUIApplication(bundleIdentifier: "com.apple.DocumentsApp")
-        let pickerApps = [files, app]
+        // SwiftUI fileImporter is presented inside the Runner's accessibility tree
+        // on the simulator. Querying com.apple.DocumentsApp directly can fail because
+        // that application is not running while the picker UI is hosted in-process.
+        let pickerApps = [app]
 
         if tapPickerItem(filename, in: pickerApps, timeout: 2) {
             return true
@@ -92,7 +94,6 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
         let controlVisible = pickerItemExists("MedicalSwiftControl.txt", in: pickerApps)
         print("PHASE10_DIAGNOSTIC control_txt_visible=\(controlVisible)")
         print("PHASE10_DIAGNOSTIC runner_hierarchy=\n\(app.debugDescription)")
-        print("PHASE10_DIAGNOSTIC files_hierarchy=\n\(files.debugDescription)")
         return false
     }
 

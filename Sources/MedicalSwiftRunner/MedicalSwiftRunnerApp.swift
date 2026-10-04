@@ -1,4 +1,6 @@
 import SwiftUI
+import UniformTypeIdentifiers
+import Foundation
 import MedicalSwiftCore
 
 @main
@@ -9,6 +11,8 @@ struct MedicalSwiftRunnerApp: App {
 }
 
 struct RunnerHomeView: View {
+    private static let swiftSourceType = UTType(filenameExtension: "swift") ?? .plainText
+
     @State private var source = """
 import SwiftUI
 struct ContentView: View {
@@ -25,6 +29,8 @@ struct ContentView: View {
 """
     @State private var runtime: ScriptRuntime?
     @State private var errorMessage: String?
+    @State private var showingImporter = false
+    @State private var loadedFilename: String?
 
     var body: some View {
         NavigationStack {
@@ -32,8 +38,15 @@ struct ContentView: View {
                 .accessibilityIdentifier("sourceEditor")
                 .font(.system(.body, design: .monospaced))
                 .padding()
-                .navigationTitle("MedicalSwift")
+                .navigationTitle(loadedFilename ?? "MedicalSwift")
                 .toolbar {
+                    Button {
+                        showingImporter = true
+                    } label: {
+                        Label("Import", systemImage: "doc.badge.plus")
+                    }
+                    .accessibilityIdentifier("importButton")
+
                     Button(action: run) {
                         Label("Run", systemImage: "play.fill")
                     }
@@ -49,6 +62,13 @@ struct ContentView: View {
                         NativeRenderer(runtime: runtime)
                     }
                 }
+                .fileImporter(
+                    isPresented: $showingImporter,
+                    allowedContentTypes: [Self.swiftSourceType],
+                    allowsMultipleSelection: false
+                ) { result in
+                    importSource(result)
+                }
                 .alert(
                     "Cannot run",
                     isPresented: Binding(
@@ -60,6 +80,24 @@ struct ContentView: View {
                 } message: {
                     Text(errorMessage ?? "")
                 }
+        }
+    }
+
+    private func importSource(_ result: Result<[URL], Error>) {
+        do {
+            guard let url = try result.get().first else { return }
+            let accessed = url.startAccessingSecurityScopedResource()
+            defer {
+                if accessed {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+
+            source = try String(contentsOf: url, encoding: .utf8)
+            loadedFilename = url.lastPathComponent
+            runtime = nil
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 

@@ -23,4 +23,47 @@ jobs:
 
       - name: Build for iOS Simulator
         run: |
-          xcodebuild             -project MedicalSwift.xcodeproj             -scheme MedicalSwiftRunner             -configuration Debug             -sdk iphonesimulator             -destination 'generic/platform=iOS Simulator'             CODE_SIGNING_ALLOWED=NO             build
+          rm -rf "$RUNNER_TEMP/MedicalSwiftDerivedData"
+          xcodebuild \
+            -project MedicalSwift.xcodeproj \
+            -scheme MedicalSwiftRunner \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/MedicalSwiftDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package unsigned simulator app
+        run: |
+          APP="$RUNNER_TEMP/MedicalSwiftDerivedData/Build/Products/Debug-iphonesimulator/MedicalSwiftRunner.app"
+          test -d "$APP"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "$RUNNER_TEMP/MedicalSwiftRunner-simulator.zip"
+
+      - name: Upload simulator app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MedicalSwiftRunner-simulator
+          path: ${{ runner.temp }}/MedicalSwiftRunner-simulator.zip
+          if-no-files-found: error
+
+      - name: Select and boot iPhone Simulator
+        id: simulator
+        run: |
+          UDID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; xs=[x for vs in d.values() for x in vs if x.get("isAvailable") and x.get("name","").startswith("iPhone")]; print(xs[0]["udid"] if xs else "")')"
+          test -n "$UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+
+      - name: Run Counter UI acceptance
+        run: |
+          xcodebuild \
+            -project MedicalSwift.xcodeproj \
+            -scheme MedicalSwiftRunner \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}" \
+            -derivedDataPath "$RUNNER_TEMP/MedicalSwiftDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            test

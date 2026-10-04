@@ -211,31 +211,46 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
 
         repeat {
             for app in apps {
+                let picker = app.otherElements["Browse View (Picker)"]
+                if !picker.exists {
+                    return true
+                }
+
                 let prefix = NSPredicate(
                     format: "label BEGINSWITH[c] %@ OR identifier == %@",
                     filename,
                     filename
                 )
 
-                let candidates = [
-                    app.cells.matching(prefix).firstMatch,
-                    app.buttons.matching(prefix).firstMatch,
-                    app.staticTexts[filename].firstMatch,
-                    app.descendants(matching: .any).matching(prefix).firstMatch
-                ]
+                let cell = app.cells.matching(prefix).firstMatch
+                if cell.exists, tapIfUsable(cell) {
+                    let dismissalDeadline = Date().addingTimeInterval(8.0)
+                    repeat {
+                        if !picker.exists {
+                            return true
+                        }
+                        RunLoop.current.run(
+                            until: Date().addingTimeInterval(0.2)
+                        )
+                    } while Date() < dismissalDeadline
 
-                for element in candidates where element.exists {
-                    if tapIfUsable(element) {
-                        let dismissalDeadline = Date().addingTimeInterval(2.0)
-                        repeat {
-                            if !app.otherElements["Browse View (Picker)"].exists {
-                                return true
-                            }
-                            RunLoop.current.run(
-                                until: Date().addingTimeInterval(0.15)
-                            )
-                        } while Date() < dismissalDeadline
-                    }
+                    // Do not repeatedly tap a stale Files element while the picker
+                    // is dismissing. A single document-cell tap is the selection.
+                    return false
+                }
+
+                let label = app.staticTexts[filename].firstMatch
+                if label.exists, tapIfUsable(label) {
+                    let dismissalDeadline = Date().addingTimeInterval(8.0)
+                    repeat {
+                        if !picker.exists {
+                            return true
+                        }
+                        RunLoop.current.run(
+                            until: Date().addingTimeInterval(0.2)
+                        )
+                    } while Date() < dismissalDeadline
+                    return false
                 }
             }
 

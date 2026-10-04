@@ -64,7 +64,7 @@ struct ContentView: View {
                 }
                 .fileImporter(
                     isPresented: $showingImporter,
-                    allowedContentTypes: [Self.swiftSourceType],
+                    allowedContentTypes: [Self.swiftSourceType, .sourceCode, .plainText],
                     allowsMultipleSelection: false
                 ) { result in
                     importSource(result)
@@ -120,6 +120,9 @@ struct ContentView: View {
     private func importSource(_ result: Result<[URL], Error>) {
         do {
             guard let url = try result.get().first else { return }
+            guard url.pathExtension.lowercased() == "swift" else {
+                throw ImportError.notSwiftFile
+            }
             let accessed = url.startAccessingSecurityScopedResource()
             defer {
                 if accessed {
@@ -140,6 +143,18 @@ struct ContentView: View {
             runtime = ScriptRuntime(program: try SwiftSubsetParser().parse(source))
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+}
+
+
+private enum ImportError: LocalizedError {
+    case notSwiftFile
+
+    var errorDescription: String? {
+        switch self {
+        case .notSwiftFile:
+            return "Please select a .swift source file."
         }
     }
 }

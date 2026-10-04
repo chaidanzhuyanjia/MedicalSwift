@@ -31,4 +31,38 @@ final class MedicalSwiftCoreTests:XCTestCase{
   let m=try ASTModelExtractor().extract(from:tree)
   XCTAssertEqual(m.state["q1"],.int(1));XCTAssertEqual(m.computed.first?.name,"total")
  }
+ func testPEDTFormPickerComputedConditional()throws{
+  let p=try SwiftSubsetParser().parse("""
+  import SwiftUI
+  struct ContentView: View {
+    @State var q1 = 0
+    @State var q2 = 0
+    var total: Int { q1 + q2 }
+    var body: some View {
+      Form {
+        Section("PEDT demo") {
+          Picker("Q1", selection: $q1) {
+            Text("0 points").tag(0)
+            Text("4 points").tag(4)
+          }
+          Text("Total: \\(total)")
+          if total >= 4 {
+            Text("Higher score")
+          } else {
+            Text("Lower score")
+          }
+        }
+      }
+    }
+  }
+  """)
+  XCTAssertEqual(p.state["q1"],.int(0))
+  XCTAssertEqual(p.state["q2"],.int(0))
+  XCTAssertEqual(p.computed.first?.name,"total")
+  guard case .form(let formChildren)=p.root,
+        case .section(_,let sectionChildren)=formChildren.first
+  else{return XCTFail("Expected Form > Section")}
+  XCTAssertEqual(sectionChildren.count,3)
+ }
+
 }

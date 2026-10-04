@@ -1,26 +1,72 @@
 # Phase 10 — external .swift file workflow
 
-## Implementation status
+## VERIFIED — PASS
 
-The Runner exposes an **Import** action backed by SwiftUI `fileImporter`. It accepts `.swift` files through a `UTType` derived from the Swift filename extension, reads the selected security-scoped URL as UTF-8 source, places the source in the editor, and clears any previously running runtime instance.
+Phase 10 is now verified end to end on the iOS Simulator at commit `136ab1ca386d8cf9c4382267753b4735c9ecfab9`.
 
-Commit `d94dfb7889af22785129a63e61eaf7b4374fb775` passed the push-triggered Swift CI and full iOS Simulator CI, including the existing Counter runtime regression test and verification that the Import control is present.
+Verified GitHub Actions run:
 
-## Document-picker round-trip gate
+- Workflow: `iOS Simulator CI`
+- Run: `37175153083`
+- Job: `111356135897`
+- Result: **PASS**
+- Swift CI for the same SHA: run `37175153082` — **PASS**
 
-A second UI acceptance test now seeds a deterministic `ImportedCounter.swift` into the Runner's Documents directory, opens the real system document picker, selects that `.swift` file, returns to the editor, taps **Run**, and requires the same `Count: 0 -> Count: 1` native interaction.
+The built Runner Info.plist was checked in CI and contains:
 
-The app target also enables:
+- `UIFileSharingEnabled = true`
+- `LSSupportsOpeningDocumentsInPlace = true`
+- `UISupportsDocumentBrowser = true`
+- `CFBundleDocumentTypes` with `public.swift-source`
 
-- `UIFileSharingEnabled`
-- `LSSupportsOpeningDocumentsInPlace`
+The simulator pre-install step confirmed these real files in the Runner Documents container:
 
-so its Documents directory participates in the Files workflow.
+- `ImportedCounter.swift`
+- `MedicalSwiftControl.txt`
 
-This round-trip test is not yet marked verified until the new CI run is green.
+The full system document-picker acceptance then passed:
+
+```text
+Import
+→ Browse
+→ On My iPhone
+→ ImportedCounter.swift
+→ return to Runner
+→ navigation title = ImportedCounter.swift
+→ Run
+→ Count: 41
+→ Imported tap
+→ Count: 42
+```
+
+The existing embedded Counter regression also passed in the same run:
+
+```text
+Run → Count: 0 → Tap me → Count: 1
+```
+
+## Root cause fixed
+
+The repeated Phase 10 failure was not the interpreter or the `.swift` UTI. The generated app Info.plist did not actually contain the Files/document-container keys even though they were written as generated-Info.plist build settings in `project.yml`.
+
+The Runner now uses an explicit XcodeGen `info.properties` block so the final built app contains the required document metadata. CI verifies those final plist values before running the UI tests.
+
+## Next acceptance
+
+The next gate is a second imported Swift file using a PEDT-style subset:
+
+- `Form`
+- `Section`
+- `Picker`
+- multiple `@State Int`
+- computed property using `+`
+- `if/else`
+- native re-render after picker selection
+
+This is separate from the now-verified Phase 10 Counter file-import gate.
 
 ## Boundary
 
-The seeded fixture validates the iOS document-picker path and real file reading, but it is still a deterministic simulator fixture created in the app's Documents directory. It does not yet prove every third-party Files provider or iCloud edge case.
+This proves the iOS Simulator system document-picker round trip using a real file in the Runner's Documents container. It does not yet prove every third-party Files provider or iCloud edge case.
 
-The runtime continues to execute only the supported MedicalSwift subset, not arbitrary Swift.
+MedicalSwift still interprets only its explicitly supported Swift/SwiftUI subset; it is not arbitrary Swift execution.

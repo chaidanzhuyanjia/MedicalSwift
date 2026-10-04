@@ -97,7 +97,7 @@ struct ContentView: View {
     private func seedUITestFixtureIfRequested() {
         guard ProcessInfo.processInfo.environment["MEDICALSWIFT_UI_TEST_SEED"] == "1" else { return }
 
-        let fixture = """
+        let counterFixture = """
 import SwiftUI
 struct ContentView: View {
     @State var count = 41
@@ -112,20 +112,55 @@ struct ContentView: View {
 }
 """
 
+        let pedtFixture = """
+import SwiftUI
+struct ContentView: View {
+    @State var q1 = 0
+    @State var q2 = 0
+
+    var total: Int { q1 + q2 }
+
+    var body: some View {
+        Form {
+            Section("PEDT demo") {
+                Picker("Q1", selection: $q1) {
+                    Text("0 points").tag(0)
+                    Text("1 point").tag(1)
+                    Text("4 points").tag(4)
+                }
+                Picker("Q2", selection: $q2) {
+                    Text("0 points").tag(0)
+                    Text("2 points").tag(2)
+                }
+                Text("Total: \\(total)")
+                if total >= 4 {
+                    Text("Higher score")
+                } else {
+                    Text("Lower score")
+                }
+            }
+        }
+    }
+}
+"""
+
         do {
             let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             try FileManager.default.createDirectory(at: documents, withIntermediateDirectories: true)
 
-            let fixtureURL = documents.appendingPathComponent("ImportedCounter.swift")
+            let counterURL = documents.appendingPathComponent("ImportedCounter.swift")
+            let pedtURL = documents.appendingPathComponent("ImportedPEDT.swift")
             let controlURL = documents.appendingPathComponent("MedicalSwiftControl.txt")
-            try fixture.write(to: fixtureURL, atomically: true, encoding: .utf8)
+            try counterFixture.write(to: counterURL, atomically: true, encoding: .utf8)
+            try pedtFixture.write(to: pedtURL, atomically: true, encoding: .utf8)
             try "MedicalSwift file-provider control".write(
                 to: controlURL,
                 atomically: true,
                 encoding: .utf8
             )
             uiTestFixtureReady =
-                FileManager.default.fileExists(atPath: fixtureURL.path)
+                FileManager.default.fileExists(atPath: counterURL.path)
+                && FileManager.default.fileExists(atPath: pedtURL.path)
                 && FileManager.default.fileExists(atPath: controlURL.path)
         } catch {
             errorMessage = error.localizedDescription

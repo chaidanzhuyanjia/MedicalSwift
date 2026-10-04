@@ -159,6 +159,37 @@ struct ContentView: View {
 }
 """
 
+        let arithmeticFixture = """
+import SwiftUI
+struct ContentView: View {
+    @State var value = 2
+    @State var enabled = false
+
+    var doubled: Int { value * 2 }
+
+    var body: some View {
+        VStack {
+            Text("Value: \\(value)")
+            Text("Double: \\(doubled)").font(.headline)
+            Button("Add three") {
+                value = value + 3
+            }
+            Button("Minus one") {
+                value -= 1
+            }
+            Button("Toggle enabled") {
+                enabled.toggle()
+            }
+            if enabled == true {
+                Text("Enabled")
+            } else {
+                Text("Disabled")
+            }
+        }
+    }
+}
+"""
+
         do {
             let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             try FileManager.default.createDirectory(at: documents, withIntermediateDirectories: true)
@@ -166,10 +197,12 @@ struct ContentView: View {
             let counterURL = documents.appendingPathComponent("ImportedCounter.swift")
             let pedtURL = documents.appendingPathComponent("ImportedPEDT.swift")
             let forEachURL = documents.appendingPathComponent("ImportedForEach.swift")
+            let arithmeticURL = documents.appendingPathComponent("ImportedArithmetic.swift")
             let controlURL = documents.appendingPathComponent("MedicalSwiftControl.txt")
             try counterFixture.write(to: counterURL, atomically: true, encoding: .utf8)
             try pedtFixture.write(to: pedtURL, atomically: true, encoding: .utf8)
             try forEachFixture.write(to: forEachURL, atomically: true, encoding: .utf8)
+            try arithmeticFixture.write(to: arithmeticURL, atomically: true, encoding: .utf8)
             try "MedicalSwift file-provider control".write(
                 to: controlURL,
                 atomically: true,
@@ -179,6 +212,7 @@ struct ContentView: View {
                 FileManager.default.fileExists(atPath: counterURL.path)
                 && FileManager.default.fileExists(atPath: pedtURL.path)
                 && FileManager.default.fileExists(atPath: forEachURL.path)
+                && FileManager.default.fileExists(atPath: arithmeticURL.path)
                 && FileManager.default.fileExists(atPath: controlURL.path)
         } catch {
             errorMessage = error.localizedDescription

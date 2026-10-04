@@ -94,6 +94,36 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Row 2"].waitForExistence(timeout: 5))
     }
 
+    func testLoadsArithmeticFileAndRunsAssignments() throws {
+        let app = XCUIApplication()
+        app.launchEnvironment["MEDICALSWIFT_UI_TEST_SEED"] = "1"
+        app.launchEnvironment["MEDICALSWIFT_UI_TEST_AUTOLOAD"] = "ImportedArithmetic.swift"
+        app.launch()
+
+        XCTAssertTrue(app.textViews["sourceEditor"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["UITest fixture ready"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.navigationBars["ImportedArithmetic.swift"].waitForExistence(timeout: 10))
+
+        let runButton = app.buttons["runButton"]
+        XCTAssertTrue(runButton.waitForExistence(timeout: 5))
+        runButton.tap()
+
+        XCTAssertTrue(app.staticTexts["Value: 2"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Double: 4"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Disabled"].waitForExistence(timeout: 5))
+
+        app.buttons["Add three"].tap()
+        XCTAssertTrue(app.staticTexts["Value: 5"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Double: 10"].waitForExistence(timeout: 5))
+
+        app.buttons["Minus one"].tap()
+        XCTAssertTrue(app.staticTexts["Value: 4"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Double: 8"].waitForExistence(timeout: 5))
+
+        app.buttons["Toggle enabled"].tap()
+        XCTAssertTrue(app.staticTexts["Enabled"].waitForExistence(timeout: 5))
+    }
+
     private func tapPickerRow(named name: String, app: XCUIApplication) -> Bool {
         let cell = app.cells.containing(.staticText, identifier: name).firstMatch
         if cell.waitForExistence(timeout: 5) {

@@ -1,84 +1,254 @@
 import SwiftUI
-public struct NativeRenderer:View{
- @ObservedObject var runtime:ScriptRuntime;let node:ViewNode
- public init(runtime:ScriptRuntime,node:ViewNode?=nil){self.runtime=runtime;self.node=node ?? runtime.root}
- @ViewBuilder public var body:some View{switch node{
- case .text(let e):Text(runtime.string(runtime.evaluate(e)))
- case .button(let t,let a):Button(runtime.string(runtime.evaluate(t))){runtime.execute(a)}
- case .textField(let t,let b):TextField(t,text:runtime.stringBinding(b))
- case .toggle(let t,let b):Toggle(t,isOn:runtime.boolBinding(b))
- case .vStack(let c):VStack(spacing:16){children(c)}
- case .hStack(let c):HStack{children(c)}
- case .form(let c):Form{children(c)}
- case .list(let c):List{children(c)}
- case .navigationStack(let c):NavigationStack{children(c)}
- case .section(let t,let c):if let t{Section(t){children(c)}}else{Section{children(c)}}
- case .picker(let t,let s,let o):Picker(t,selection:runtime.intBinding(s)){ForEach(o,id:\.value){Text($0.title).tag($0.value)}}
- case .conditional(let q,let y,let n):if runtime.test(q){children(y)}else{children(n)}
- case .forEachRange(let start,let endExpr,let variable,let template):
-  if case .int(let end)=runtime.evaluate(endExpr){
-   ForEach(start..<max(start,end),id:\.self){i in
-    children(template.map{$0.substituting(variable:variable,with:i)})
-   }
-  }
- case .spacer:Spacer()
- case .modified(let base,let mods):ModifiedRenderer(runtime:runtime,base:base,modifiers:mods)
- }}
- @ViewBuilder private func children(_ c:[ViewNode])->some View{ForEach(Array(c.enumerated()),id:\.offset){_,v in NativeRenderer(runtime:runtime,node:v)}}
+
+public struct NativeRenderer: View {
+    @ObservedObject var runtime: ScriptRuntime
+    let node: ViewNode
+
+    public init(runtime: ScriptRuntime, node: ViewNode? = nil) {
+        self.runtime = runtime
+        self.node = node ?? runtime.root
+    }
+
+    @ViewBuilder
+    public var body: some View {
+        switch node {
+        case .text(let expression):
+            Text(runtime.string(runtime.evaluate(expression)))
+        case .button(let title, let action):
+            Button(runtime.string(runtime.evaluate(title))) {
+                runtime.execute(action)
+            }
+        case .textField(let title, let binding):
+            TextField(title, text: runtime.stringBinding(binding))
+        case .toggle(let title, let binding):
+            Toggle(title, isOn: runtime.boolBinding(binding))
+        case .vStack(let children):
+            VStack(spacing: 16) { render(children) }
+        case .hStack(let children):
+            HStack { render(children) }
+        case .form(let children):
+            Form { render(children) }
+        case .list(let children):
+            List { render(children) }
+        case .navigationStack(let children):
+            NavigationStack { render(children) }
+        case .section(let title, let children):
+            if let title {
+                Section(title) { render(children) }
+            } else {
+                Section { render(children) }
+            }
+        case .picker(let title, let selection, let options):
+            Picker(title, selection: runtime.intBinding(selection)) {
+                ForEach(options, id: \.value) {
+                    Text($0.title).tag($0.value)
+                }
+            }
+        case .conditional(let condition, let yes, let no):
+            if runtime.test(condition) {
+                render(yes)
+            } else {
+                render(no)
+            }
+        case .forEachRange(let start, let endExpression, let variable, let template):
+            if case .int(let end) = runtime.evaluate(endExpression) {
+                ForEach(start..<max(start, end), id: \.self) { value in
+                    render(
+                        template.map {
+                            $0.substituting(variable: variable, with: value)
+                        }
+                    )
+                }
+            }
+        case .spacer:
+            Spacer()
+        case .modified(let base, let modifiers):
+            ModifiedRenderer(
+                runtime: runtime,
+                base: base,
+                modifiers: modifiers
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func render(_ children: [ViewNode]) -> some View {
+        ForEach(Array(children.enumerated()), id: \.offset) { _, child in
+            NativeRenderer(runtime: runtime, node: child)
+        }
+    }
 }
-private struct ModifiedRenderer:View{
- @ObservedObject var runtime:ScriptRuntime;let base:ViewNode;let modifiers:[ViewModifier]
- var body:some View{modifiers.reduce(AnyView(NativeRenderer(runtime:runtime,node:base))){view,m in switch m{case .padding:return AnyView(view.padding());case .navigationTitle(let s):return AnyView(view.navigationTitle(s));case .font(let f):let font:Font=f == .title ? .title : f == .headline ? .headline : f == .caption ? .caption : .body;return AnyView(view.font(font))}}}
+
+private struct ModifiedRenderer: View {
+    @ObservedObject var runtime: ScriptRuntime
+    let base: ViewNode
+    let modifiers: [ViewModifier]
+
+    var body: some View {
+        modifiers.reduce(AnyView(NativeRenderer(runtime: runtime, node: base))) {
+            view, modifier in
+            switch modifier {
+            case .padding:
+                return AnyView(view.padding())
+            case .navigationTitle(let title):
+                return AnyView(view.navigationTitle(title))
+            case .font(let token):
+                let font: Font =
+                    token == .title ? .title :
+                    token == .headline ? .headline :
+                    token == .caption ? .caption :
+                    .body
+                return AnyView(view.font(font))
+            }
+        }
+    }
 }
-private extension ViewNode{
- func substituting(variable:String,with value:Int)->ViewNode{
-  switch self{
-  case .text(let e):return .text(e.substituting(variable:variable,with:value))
-  case .button(let t,let a):return .button(title:t.substituting(variable:variable,with:value),action:a.map{$0.substituting(variable:variable,with:value)})
-  case .textField,.toggle,.picker,.spacer:return self
-  case .vStack(let c):return .vStack(c.map{$0.substituting(variable:variable,with:value)})
-  case .hStack(let c):return .hStack(c.map{$0.substituting(variable:variable,with:value)})
-  case .form(let c):return .form(c.map{$0.substituting(variable:variable,with:value)})
-  case .list(let c):return .list(c.map{$0.substituting(variable:variable,with:value)})
-  case .navigationStack(let c):return .navigationStack(c.map{$0.substituting(variable:variable,with:value)})
-  case .section(let t,let c):return .section(title:t,children:c.map{$0.substituting(variable:variable,with:value)})
-  case .conditional(let q,let y,let n):return .conditional(condition:q.substituting(variable:variable,with:value),then:y.map{$0.substituting(variable:variable,with:value)},otherwise:n.map{$0.substituting(variable:variable,with:value)})
-  case .forEachRange(let s,let e,let v,let t):
-   return .forEachRange(start:s,end:e.substituting(variable:variable,with:value),variable:v,template:t.map{$0.substituting(variable:variable,with:value)})
-  case .modified(let b,let m):return .modified(b.substituting(variable:variable,with:value),m)
-  }
- }
+
+private extension ViewNode {
+    func substituting(variable: String, with value: Int) -> ViewNode {
+        switch self {
+        case .text(let expression):
+            return .text(expression.substituting(variable: variable, with: value))
+        case .button(let title, let action):
+            return .button(
+                title: title.substituting(variable: variable, with: value),
+                action: action.map {
+                    $0.substituting(variable: variable, with: value)
+                }
+            )
+        case .textField, .toggle, .picker, .spacer:
+            return self
+        case .vStack(let children):
+            return .vStack(children.map {
+                $0.substituting(variable: variable, with: value)
+            })
+        case .hStack(let children):
+            return .hStack(children.map {
+                $0.substituting(variable: variable, with: value)
+            })
+        case .form(let children):
+            return .form(children.map {
+                $0.substituting(variable: variable, with: value)
+            })
+        case .list(let children):
+            return .list(children.map {
+                $0.substituting(variable: variable, with: value)
+            })
+        case .navigationStack(let children):
+            return .navigationStack(children.map {
+                $0.substituting(variable: variable, with: value)
+            })
+        case .section(let title, let children):
+            return .section(
+                title: title,
+                children: children.map {
+                    $0.substituting(variable: variable, with: value)
+                }
+            )
+        case .conditional(let condition, let yes, let no):
+            return .conditional(
+                condition: condition.substituting(
+                    variable: variable,
+                    with: value
+                ),
+                then: yes.map {
+                    $0.substituting(variable: variable, with: value)
+                },
+                otherwise: no.map {
+                    $0.substituting(variable: variable, with: value)
+                }
+            )
+        case .forEachRange(let start, let end, let innerVariable, let template):
+            return .forEachRange(
+                start: start,
+                end: end.substituting(variable: variable, with: value),
+                variable: innerVariable,
+                template: template.map {
+                    $0.substituting(variable: variable, with: value)
+                }
+            )
+        case .modified(let base, let modifiers):
+            return .modified(
+                base.substituting(variable: variable, with: value),
+                modifiers
+            )
+        }
+    }
 }
-private extension Expression{
- func substituting(variable:String,with value:Int)->Expression{
-  switch self{
-  case .variable(let n) where n==variable:return .int(value)
-  case .add(let a,let b):return .add(a.substituting(variable:variable,with:value),b.substituting(variable:variable,with:value))
-  case .interpolated(let p):return .interpolated(p.map{$0.substituting(variable:variable,with:value)})
-  default:return self
-  }
- }
+
+private extension Expression {
+    func substituting(variable: String, with value: Int) -> Expression {
+        switch self {
+        case .variable(let name) where name == variable:
+            return .int(value)
+        case .add(let left, let right):
+            return .add(
+                left.substituting(variable: variable, with: value),
+                right.substituting(variable: variable, with: value)
+            )
+        case .subtract(let left, let right):
+            return .subtract(
+                left.substituting(variable: variable, with: value),
+                right.substituting(variable: variable, with: value)
+            )
+        case .multiply(let left, let right):
+            return .multiply(
+                left.substituting(variable: variable, with: value),
+                right.substituting(variable: variable, with: value)
+            )
+        case .interpolated(let parts):
+            return .interpolated(
+                parts.map {
+                    $0.substituting(variable: variable, with: value)
+                }
+            )
+        default:
+            return self
+        }
+    }
 }
-private extension InterpolationPart{
- func substituting(variable:String,with value:Int)->InterpolationPart{
-  switch self{
-  case .literal:return self
-  case .expression(let e):return .expression(e.substituting(variable:variable,with:value))
-  }
- }
+
+private extension InterpolationPart {
+    func substituting(variable: String, with value: Int) -> InterpolationPart {
+        switch self {
+        case .literal:
+            return self
+        case .expression(let expression):
+            return .expression(
+                expression.substituting(variable: variable, with: value)
+            )
+        }
+    }
 }
-private extension Condition{
- func substituting(variable:String,with value:Int)->Condition{
-  switch self{
-  case .compare(let l,let op,let r):return .compare(l.substituting(variable:variable,with:value),op,r.substituting(variable:variable,with:value))
-  }
- }
+
+private extension Condition {
+    func substituting(variable: String, with value: Int) -> Condition {
+        switch self {
+        case .compare(let left, let op, let right):
+            return .compare(
+                left.substituting(variable: variable, with: value),
+                op,
+                right.substituting(variable: variable, with: value)
+            )
+        }
+    }
 }
-private extension Statement{
- func substituting(variable:String,with value:Int)->Statement{
-  switch self{
-  case .increment:return self
-  case .assign(let n,let e):return .assign(name:n,value:e.substituting(variable:variable,with:value))
-  }
- }
+
+private extension Statement {
+    func substituting(variable: String, with value: Int) -> Statement {
+        switch self {
+        case .increment:
+            return self
+        case .assign(let name, let expression):
+            return .assign(
+                name: name,
+                value: expression.substituting(
+                    variable: variable,
+                    with: value
+                )
+            )
+        case .toggle:
+            return self
+        }
+    }
 }

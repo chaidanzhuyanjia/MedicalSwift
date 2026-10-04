@@ -88,4 +88,34 @@ final class MedicalSwiftCoreTests:XCTestCase{
   XCTAssertEqual(template.count,1)
  }
 
+ func testArithmeticAssignmentsAndBoolCondition()throws{
+  let p=try SwiftSubsetParser().parse("""
+  import SwiftUI
+  struct ContentView: View {
+    @State var value = 2
+    @State var enabled = false
+    var doubled: Int { value * 2 }
+    var body: some View {
+      VStack {
+        Text("Double: \\(doubled)")
+        Button("Add") { value = value + 3 }
+        Button("Minus") { value -= 1 }
+        Button("Toggle") { enabled.toggle() }
+        if enabled == true {
+          Text("Enabled")
+        } else {
+          Text("Disabled")
+        }
+      }
+    }
+  }
+  """)
+  XCTAssertEqual(p.state["value"],.int(2))
+  XCTAssertEqual(p.state["enabled"],.bool(false))
+  XCTAssertEqual(p.computed.first(where:{$0.name=="doubled"})?.expression,.multiply(.variable("value"),.int(2)))
+  guard case .vStack(let children)=p.root else{return XCTFail("Expected VStack")}
+  XCTAssertEqual(children.count,5)
+ }
+
+
 }

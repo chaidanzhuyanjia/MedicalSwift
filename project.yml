@@ -40,6 +40,18 @@ targets:
         CODE_SIGNING_ALLOWED: NO
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: NO
+  MedicalSwiftRunnerUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - Tests/MedicalSwiftRunnerUITests
+    dependencies:
+      - target: MedicalSwiftRunner
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.medicalswift.runner.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO
 schemes:
   MedicalSwiftRunner:
     build:
@@ -48,3 +60,7 @@ schemes:
         MedicalSwiftCore: all
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - MedicalSwiftRunnerUITests

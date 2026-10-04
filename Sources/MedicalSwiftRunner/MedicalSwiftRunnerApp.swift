@@ -118,6 +118,7 @@ struct ContentView: View {
 
             let fixtureURL = documents.appendingPathComponent("ImportedCounter.swift")
             try fixture.write(to: fixtureURL, atomically: true, encoding: .utf8)
+            uiTestFixtureReady = FileManager.default.fileExists(atPath: fixtureURL.path)
         } catch {
             errorMessage = error.localizedDescription
         }

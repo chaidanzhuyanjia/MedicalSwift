@@ -19,6 +19,8 @@ public final class ScriptRuntime: ObservableObject {
         switch expression {
         case .int(let value):
             return .int(value)
+        case .double(let value):
+            return .double(value)
         case .bool(let value):
             return .bool(value)
         case .string(let value):
@@ -37,21 +39,38 @@ public final class ScriptRuntime: ObservableObject {
             if case .int(let a) = lhs, case .int(let b) = rhs {
                 return .int(a + b)
             }
+            if let a = numeric(lhs), let b = numeric(rhs) {
+                return .double(a + b)
+            }
             return .string(string(lhs) + string(rhs))
         case .subtract(let left, let right):
-            guard case .int(let a) = evaluate(left),
-                  case .int(let b) = evaluate(right)
-            else {
-                return .int(0)
+            let lhs = evaluate(left)
+            let rhs = evaluate(right)
+            if case .int(let a) = lhs, case .int(let b) = rhs {
+                return .int(a - b)
             }
-            return .int(a - b)
+            guard let a = numeric(lhs), let b = numeric(rhs) else {
+                return .double(.nan)
+            }
+            return .double(a - b)
         case .multiply(let left, let right):
-            guard case .int(let a) = evaluate(left),
-                  case .int(let b) = evaluate(right)
-            else {
-                return .int(0)
+            let lhs = evaluate(left)
+            let rhs = evaluate(right)
+            if case .int(let a) = lhs, case .int(let b) = rhs {
+                return .int(a * b)
             }
-            return .int(a * b)
+            guard let a = numeric(lhs), let b = numeric(rhs) else {
+                return .double(.nan)
+            }
+            return .double(a * b)
+        case .divide(let left, let right):
+            guard let a = numeric(evaluate(left)),
+                  let b = numeric(evaluate(right)),
+                  b != 0
+            else {
+                return .double(.nan)
+            }
+            return .double(a / b)
         case .interpolated(let parts):
             return .string(
                 parts.map {
@@ -72,22 +91,21 @@ public final class ScriptRuntime: ObservableObject {
             let lhs = evaluate(left)
             let rhs = evaluate(right)
 
-            switch op {
-            case .eq:
-                return lhs == rhs
-            case .neq:
-                return lhs != rhs
-            case .lt, .lte, .gt, .gte:
-                guard case .int(let a) = lhs, case .int(let b) = rhs else {
-                    return false
-                }
+            if let a = numeric(lhs), let b = numeric(rhs) {
                 switch op {
                 case .lt: return a < b
                 case .lte: return a <= b
                 case .gt: return a > b
                 case .gte: return a >= b
-                case .eq, .neq: return false
+                case .eq: return a == b
+                case .neq: return a != b
                 }
+            }
+
+            switch op {
+            case .eq: return lhs == rhs
+            case .neq: return lhs != rhs
+            case .lt, .lte, .gt, .gte: return false
             }
         }
     }
@@ -148,10 +166,19 @@ public final class ScriptRuntime: ObservableObject {
     public func string(_ value: RuntimeValue) -> String {
         switch value {
         case .int(let number): return String(number)
+        case .double(let number): return String(number)
         case .bool(let boolean): return boolean ? "true" : "false"
         case .string(let string): return string
         case .array(let values):
             return "[" + values.map { string($0) }.joined(separator: ", ") + "]"
+        }
+    }
+
+    private func numeric(_ value: RuntimeValue) -> Double? {
+        switch value {
+        case .int(let number): return Double(number)
+        case .double(let number): return number
+        case .bool, .string, .array: return nil
         }
     }
 }

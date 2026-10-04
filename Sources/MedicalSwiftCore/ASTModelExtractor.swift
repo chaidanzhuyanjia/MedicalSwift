@@ -47,12 +47,14 @@ public struct ASTModelExtractor {
                     switch expression {
                     case .int(let value):
                         model.state[name] = .int(value)
+                    case .double(let value):
+                        model.state[name] = .double(value)
                     case .bool(let value):
                         model.state[name] = .bool(value)
                     case .string(let value):
                         model.state[name] = .string(value)
                     default:
-                        throw RuntimeDiagnostic("@State initializer must be an Int, Bool, or String literal.")
+                        throw RuntimeDiagnostic("@State initializer must be an Int, Double, Bool, or String literal.")
                     }
                 } else if name != "body",
                           let initializer = binding.initializer?.value {
@@ -106,13 +108,15 @@ public struct ASTModelExtractor {
         switch try lowerer.lower(expression) {
         case .int(let value):
             return .int(value)
+        case .double(let value):
+            return .double(value)
         case .bool(let value):
             return .bool(value)
         case .string(let value):
             return .string(value)
         default:
             throw RuntimeDiagnostic(
-                "Stored properties currently support literal Int, Bool, String, or arrays of those literals."
+                "Stored properties currently support literal Int, Double, Bool, String, or arrays of those literals."
             )
         }
     }

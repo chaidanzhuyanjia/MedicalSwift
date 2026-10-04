@@ -147,4 +147,38 @@ final class MedicalSwiftCoreTests:XCTestCase{
  }
 
 
+ func testDoubleArithmeticAndDivision()throws{
+  let p=try SwiftSubsetParser().parse("""
+  import SwiftUI
+  struct ContentView: View {
+    @State var dose = 2.5
+    var total: Double { dose * 3 }
+    var half: Double { total / 2 }
+    var body: some View {
+      VStack {
+        Text("Dose: \\(dose)")
+        Text("Total: \\(total)")
+        Text("Half: \\(half)")
+        Button("Add half") { dose += 0.5 }
+        if total >= 9.0 {
+          Text("High")
+        } else {
+          Text("Low")
+        }
+      }
+    }
+  }
+  """)
+  XCTAssertEqual(p.state["dose"],RuntimeValue.double(2.5))
+  XCTAssertEqual(
+    p.computed.first(where:{$0.name=="total"})?.expression,
+    Expression.multiply(.variable("dose"),.int(3))
+  )
+  XCTAssertEqual(
+    p.computed.first(where:{$0.name=="half"})?.expression,
+    Expression.divide(.variable("total"),.int(2))
+  )
+ }
+
+
 }

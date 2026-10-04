@@ -164,13 +164,19 @@ import SwiftUI
 struct ContentView: View {
     @State var value = 2
     @State var enabled = false
+    @State var dose = 2.5
 
     var doubled: Int { value * 2 }
+    var doseTotal: Double { dose * 3 }
+    var doseHalf: Double { doseTotal / 2 }
 
     var body: some View {
         VStack {
             Text("Value: \\(value)")
             Text("Double: \\(doubled)").font(.headline)
+            Text("Dose: \\(dose)")
+            Text("Dose total: \\(doseTotal)")
+            Text("Dose half: \\(doseHalf)")
             Button("Add three") {
                 value = value + 3
             }
@@ -180,10 +186,18 @@ struct ContentView: View {
             Button("Toggle enabled") {
                 enabled.toggle()
             }
+            Button("Add half dose") {
+                dose += 0.5
+            }
             if enabled == true {
                 Text("Enabled")
             } else {
                 Text("Disabled")
+            }
+            if doseTotal >= 9.0 {
+                Text("Dose high")
+            } else {
+                Text("Dose low")
             }
         }
     }

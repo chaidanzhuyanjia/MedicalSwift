@@ -111,6 +111,10 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Value: 2"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["Double: 4"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Disabled"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Dose: 2.5"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Dose total: 7.5"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Dose half: 3.75"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Dose low"].waitForExistence(timeout: 5))
 
         app.buttons["Add three"].tap()
         XCTAssertTrue(app.staticTexts["Value: 5"].waitForExistence(timeout: 5))
@@ -122,6 +126,12 @@ final class MedicalSwiftRunnerUITests: XCTestCase {
 
         app.buttons["Toggle enabled"].tap()
         XCTAssertTrue(app.staticTexts["Enabled"].waitForExistence(timeout: 5))
+
+        app.buttons["Add half dose"].tap()
+        XCTAssertTrue(app.staticTexts["Dose: 3.0"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Dose total: 9.0"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Dose half: 4.5"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Dose high"].waitForExistence(timeout: 5))
     }
 
     func testLoadsStaticArrayForEachFile() throws {

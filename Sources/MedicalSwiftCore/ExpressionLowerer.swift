@@ -12,6 +12,11 @@ struct ExpressionLowerer {
             return .int(value)
         }
 
+        if let floating = expression.as(FloatLiteralExprSyntax.self),
+           let value = Double(floating.literal.text) {
+            return .double(value)
+        }
+
         if let boolean = expression.as(BooleanLiteralExprSyntax.self) {
             return .bool(boolean.literal.text == "true")
         }
@@ -60,7 +65,7 @@ struct ExpressionLowerer {
         var index = 1
         while index + 1 < elements.count {
             let op = elements[index].trimmedDescription
-            guard ["+", "-", "*"].contains(op) else {
+            guard ["+", "-", "*", "/"].contains(op) else {
                 throw RuntimeDiagnostic("Unsupported operator \(op)")
             }
             operators.append(op)
@@ -70,8 +75,12 @@ struct ExpressionLowerer {
 
         var i = 0
         while i < operators.count {
-            if operators[i] == "*" {
-                values[i] = .multiply(values[i], values[i + 1])
+            if operators[i] == "*" || operators[i] == "/" {
+                values[i] = try combine(
+                    values[i],
+                    operator: operators[i],
+                    values[i + 1]
+                )
                 values.remove(at: i + 1)
                 operators.remove(at: i)
             } else {
@@ -95,6 +104,7 @@ struct ExpressionLowerer {
         case "+": return .add(left, right)
         case "-": return .subtract(left, right)
         case "*": return .multiply(left, right)
+        case "/": return .divide(left, right)
         default: throw RuntimeDiagnostic("Unsupported operator \(op)")
         }
     }

@@ -41,6 +41,7 @@ public struct PickerOption: Equatable, Sendable {
 
 public indirect enum Expression: Equatable, Sendable {
     case int(Int)
+    case double(Double)
     case bool(Bool)
     case string(String)
     case variable(String)
@@ -48,6 +49,7 @@ public indirect enum Expression: Equatable, Sendable {
     case add(Expression, Expression)
     case subtract(Expression, Expression)
     case multiply(Expression, Expression)
+    case divide(Expression, Expression)
 }
 
 public enum InterpolationPart: Equatable, Sendable {
@@ -102,6 +104,7 @@ public struct ScriptProgram: Equatable, Sendable {
 
 public enum RuntimeValue: Equatable, Sendable {
     case int(Int)
+    case double(Double)
     case bool(Bool)
     case string(String)
     case array([RuntimeValue])

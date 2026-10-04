@@ -206,6 +206,7 @@ private extension Expression {
         case .variable(let name) where name == variable:
             switch value {
             case .int(let number): return .int(number)
+            case .double(let number): return .double(number)
             case .bool(let boolean): return .bool(boolean)
             case .string(let string): return .string(string)
             case .array: return self
@@ -222,6 +223,11 @@ private extension Expression {
             )
         case .multiply(let left, let right):
             return .multiply(
+                left.substituting(variable: variable, with: value),
+                right.substituting(variable: variable, with: value)
+            )
+        case .divide(let left, let right):
+            return .divide(
                 left.substituting(variable: variable, with: value),
                 right.substituting(variable: variable, with: value)
             )

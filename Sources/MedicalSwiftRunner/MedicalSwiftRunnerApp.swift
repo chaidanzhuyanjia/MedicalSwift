@@ -151,7 +151,7 @@ struct ContentView: View {
     @State var count = 3
     var body: some View {
         VStack {
-            ForEach(0..<count, id: \.self) { i in
+            ForEach(0..<count, id: \\.self) { i in
                 Text("Row \\(i)")
             }
         }

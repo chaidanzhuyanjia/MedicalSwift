@@ -11,7 +11,7 @@ struct MedicalSwiftRunnerApp: App {
 }
 
 struct RunnerHomeView: View {
-    private static let swiftSourceType = UTType(filenameExtension: "swift") ?? .plainText
+    private static let swiftSourceType = UTType("com.medicalswift.swift-source") ?? UTType(filenameExtension: "swift") ?? .sourceCode
 
     @State private var source = """
 import SwiftUI

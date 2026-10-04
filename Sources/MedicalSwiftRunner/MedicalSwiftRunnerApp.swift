@@ -29,6 +29,7 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             TextEditor(text: $source)
+                .accessibilityIdentifier("sourceEditor")
                 .font(.system(.body, design: .monospaced))
                 .padding()
                 .navigationTitle("MedicalSwift")
@@ -36,6 +37,7 @@ struct ContentView: View {
                     Button(action: run) {
                         Label("Run", systemImage: "play.fill")
                     }
+                    .accessibilityIdentifier("runButton")
                 }
                 .navigationDestination(
                     isPresented: Binding(
